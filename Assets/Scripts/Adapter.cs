@@ -74,18 +74,20 @@ namespace RecyclerView{
 
                         vh.current_index = i;
                         vh.last_index = i;
-                        vh.status = Status.SCRAP;   
+                        vh.status = Status.SCRAP;
 
-                        AddToAttachedScrap(vh, true);
+
+                       AddToAttachedScrap(vh, true);
 
                         OnBindViewHolder((T)Convert.ChangeType(vh, typeof(T)), i);
                 }
-
+                ReorderList();
             }
+
             last_y_scroll_position = 1;
             // current_start_position = 0; 
             // current_end_position = Mathf.CeilToInt(cell_screen_size) + 1;
-        }
+        }     
 
         private void AddToAttachedScrap(ViewHolder vh, bool attachTop){
             vh.itemView.transform.SetParent(transform);
@@ -95,18 +97,46 @@ namespace RecyclerView{
                 vh.itemView.transform.SetAsFirstSibling();
             }
             vh.itemView.name = vh.current_index.ToString();
+           
             vh.itemView.SetActive(true);
             attachedScrap.Add(vh);
         }
 
 
+        private void ReorderList()
+        {
+            List<ViewHolder> vhs = new List<ViewHolder>();
+            vhs.AddRange(cacheBot);
+            vhs.AddRange(cacheTop);
+            vhs.AddRange(attachedScrap);
+            foreach(ViewHolder vh in vhs)
+            {
+                vh.itemView.GetComponent<RectTransform>().localPosition = new Vector3(0, -vh.current_index * 100, 0);
+            }
+            
+        }
+
         private ViewHolder GetFromCache(int i, bool top){
-         //   foreach(ViewHolder vh in top ? cacheTop : cacheBot){
-            foreach(ViewHolder vh in  cacheTop ){
-                if(vh.current_index == i){
-                   // (top ? cacheTop : cacheBot).Remove(vh);
-                     cacheTop.Remove(vh);
-                    return vh;
+            if (top)
+            {
+                foreach (ViewHolder vh in cacheTop)
+                {
+                    if (vh.current_index == i)
+                    {
+                        cacheTop.Remove(vh);
+                        return vh;
+                    }
+                }
+            }
+            else
+            {
+                foreach (ViewHolder vh in cacheBot)
+                {
+                    if (vh.current_index == i)
+                    {
+                        cacheBot.Remove(vh);
+                        return vh;
+                    }
                 }
             }
             return null;
@@ -291,7 +321,7 @@ namespace RecyclerView{
             RemoveViewHoldersFromCache(false);
             AddNewViewHoldersToCache(true);
             AddNewViewHoldersToCache(false);
-
+            ReorderList();
 
 
 
@@ -474,16 +504,17 @@ namespace RecyclerView{
             Sort(cacheBot, false);
             if(cacheBot.Count > CACHE_SIZE){
                 for(int i=cacheBot.Count - 1; i>=CACHE_SIZE; i--){
-                     
-                 //   StartCoroutine(test(i));
-                    // GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0);
-                    // ThrowToPool(cacheBot[i]);
-                    // GetComponent<RectTransform>().pivot = new Vector2(0.5f, 1);
-                   // Vector2 vec = GetComponent<RectTransform>().sizeDelta;
-                  //   GetComponent<RectTransform>().sizeDelta = new Vector2( GetComponent<RectTransform>().sizeDelta.x,  GetComponent<RectTransform>().sizeDelta.y - 100);
-                  //   Vector2 vec2 = GetComponent<RectTransform>().sizeDelta;
-                  //  cacheBot.RemoveAt(i);
-                }
+                        ThrowToPool(cacheBot[i]);
+                        cacheBot.RemoveAt(i);
+                        //   StartCoroutine(test(i));
+                        // GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0);
+                        // ThrowToPool(cacheBot[i]);
+                        // GetComponent<RectTransform>().pivot = new Vector2(0.5f, 1);
+                        // Vector2 vec = GetComponent<RectTransform>().sizeDelta;
+                        //   GetComponent<RectTransform>().sizeDelta = new Vector2( GetComponent<RectTransform>().sizeDelta.x,  GetComponent<RectTransform>().sizeDelta.y - 100);
+                        //   Vector2 vec2 = GetComponent<RectTransform>().sizeDelta;
+                        //  cacheBot.RemoveAt(i);
+                    }
             }
         }
     }
