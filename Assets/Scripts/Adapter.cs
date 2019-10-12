@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace RecyclerView{
@@ -23,8 +24,8 @@ namespace RecyclerView{
 
         public int end_position;
         public int start_position;
-        private int POOL_SIZE = 10;
-        private int CACHE_SIZE = 3;
+        private int POOL_SIZE = 20;
+        private int CACHE_SIZE = 6;
 
         private int ATTACHED_SCRAP_SIZE = 12 ;
 
@@ -70,7 +71,7 @@ namespace RecyclerView{
                 // }
                 for(int i = 0; i<ATTACHED_SCRAP_SIZE ; i++){
                         ViewHolder vh = (ViewHolder) Activator.CreateInstance(typeof(T),new object[] { OnCreateViewHolder(transform) } );
-        
+                        
 
                         vh.current_index = i;
                         vh.last_index = i;
@@ -97,7 +98,7 @@ namespace RecyclerView{
                 vh.itemView.transform.SetAsFirstSibling();
             }
             vh.itemView.name = vh.current_index.ToString();
-           
+            vh.itemView.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 1f);
             vh.itemView.SetActive(true);
             attachedScrap.Add(vh);
         }
@@ -283,7 +284,7 @@ namespace RecyclerView{
         // }
 
         // private int GetCurrentStartPosition(){
-         
+
         //    float scroll_pos_inv = (1 - scroll.verticalNormalizedPosition)  ; 
         //    // float items_size = GetItemCount() - cell_screen_size;
         //     float items_size = Mathf.CeilToInt(cell_screen_size) + 1;
@@ -293,8 +294,49 @@ namespace RecyclerView{
         // //     float items_size = Mathf.CeilToInt(cell_screen_size) + 1;
         // //     return Mathf.RoundToInt(scroll_pos_inv * items_size);
         // }
+
+        //public override void OnBeginDrag(PointerEventData eventData)
+        //{
+
+        //}
+        //public override void OnDrag(PointerEventData eventData)
+        //{
+
+        //}
+        //public override void OnEndDrag(PointerEventData eventData)
+        //{
+
+        //}
+        //public override void OnInitializePotentialDrag(PointerEventData eventData)
+        //{
+
+        //}
+        //public override void OnScroll(PointerEventData data)
+        //{
+
+        //}
+
         public void OnScroll(Vector2 pos){
-            
+
+            if(pos.y > 1)
+            {
+               // transform.parent.GetComponent<ScrollRect>().
+            }
+
+            if(GetComponent<RectTransform>().offsetMax.y < 0)
+            {
+                GetComponent<RectTransform>().offsetMax = new Vector2(GetComponent<RectTransform>().offsetMax.x, 0);
+            }
+
+            //if (GetComponent<RectTransform>().offsetMax.y < 0)
+            //{
+            //    GetComponent<RectTransform>().offsetMax = new Vector2(GetComponent<RectTransform>().offsetMax.x, 0);
+            //}
+
+          
+            Vector2 velocity = transform.parent.GetComponent<ScrollRect>().velocity;
+            transform.parent.GetComponent<ScrollRect>().velocity = new Vector2(0, Mathf.Clamp(velocity.y, -1000, 1000));
+          //  Debug.Log(transform.parent.GetComponent<ScrollRect>().velocity);
             // Debug.ClearDeveloperConsole();
             // string str = "";
             // foreach(ViewHolder vh in attachedScrap){
@@ -302,10 +344,10 @@ namespace RecyclerView{
             // }
             // Debug.Log(str);
 
-          //  Sort(cacheBot, false);
-        //    Sort(cacheTop, true);
-             
-            if(last_y_scroll_position < scroll.verticalNormalizedPosition){
+            //  Sort(cacheBot, false);
+            //    Sort(cacheTop, true);
+
+            if (last_y_scroll_position < scroll.verticalNormalizedPosition){
               //  OnScrollUp();
             //   GetComponent<RectTransform>().pivot = new Vector2(0.5f, 1);
             }else if(last_y_scroll_position > scroll.verticalNormalizedPosition){
@@ -401,6 +443,7 @@ namespace RecyclerView{
                             vh.itemView.transform.SetParent(transform);              
                             vh.itemView.transform.SetAsLastSibling();                     
                             vh.itemView.name = vh.current_index.ToString() + " "  + " CACHE";
+                            vh.itemView.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 1f);
                             vh.itemView.SetActive(true);
                             
                             ThrowToCache(vh, true);
@@ -416,7 +459,8 @@ namespace RecyclerView{
                             vh.itemView.transform.SetParent(transform);                               
                             vh.itemView.transform.SetAsFirstSibling();               
                             vh.itemView.name = vh.current_index.ToString() + " "  + " CACHE";
-                            vh.itemView.SetActive(true);
+                        vh.itemView.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 1f);
+                        vh.itemView.SetActive(true);
                             
 
                             ThrowToCache(vh, false);
@@ -432,6 +476,7 @@ namespace RecyclerView{
             }else{
                 vh.status = Status.RECYCLED;
                 vh.itemView.transform.SetParent(poolObj.transform);
+                vh.itemView.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 1f);
                 vh.itemView.SetActive(false);
                 pool.Add(vh);
             }
