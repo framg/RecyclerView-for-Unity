@@ -63,6 +63,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\Adapter.cs" />
+    <Compile Include="Assets\Scripts\Adapter2.cs" />
     <Compile Include="Assets\Scripts\ExampleAdapter.cs" />
     <Compile Include="Assets\Scripts\Pool.cs" />
     <Compile Include="Assets\Scripts\RendererExtensions.cs" />

@@ -11,6 +11,8 @@ namespace RecyclerView{
 
         public Status status;
 
+
+
         public ViewHolder(GameObject itemView){
             this.itemView = itemView;
 
@@ -39,6 +41,8 @@ namespace RecyclerView{
     public enum Status{
         SCRAP,
         CACHE,
+        CACHE_TOP,
+        CACHE_BOT,
         RECYCLED
 
     }

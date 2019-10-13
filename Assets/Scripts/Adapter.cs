@@ -24,8 +24,9 @@ namespace RecyclerView{
 
         public int end_position;
         public int start_position;
-        private int POOL_SIZE = 20;
-        private int CACHE_SIZE = 6;
+        private int POOL_SIZE = 10;
+        private int CACHE_SIZE = 3;
+        public float LIMIT_BOTTOM = 0;
 
         private int ATTACHED_SCRAP_SIZE = 12 ;
 
@@ -83,6 +84,7 @@ namespace RecyclerView{
                         OnBindViewHolder((T)Convert.ChangeType(vh, typeof(T)), i);
                 }
                 ReorderList();
+                LIMIT_BOTTOM = (GetItemCount() * attachedScrap[0].itemView.GetComponent<RectTransform>().rect.height) - transform.parent.GetComponent<RectTransform>().rect.height;
             }
 
             last_y_scroll_position = 1;
@@ -317,6 +319,7 @@ namespace RecyclerView{
         //}
 
         public void OnScroll(Vector2 pos){
+            
 
             if(pos.y > 1)
             {
@@ -326,6 +329,12 @@ namespace RecyclerView{
             if(GetComponent<RectTransform>().offsetMax.y < 0)
             {
                 GetComponent<RectTransform>().offsetMax = new Vector2(GetComponent<RectTransform>().offsetMax.x, 0);
+                GetComponent<RectTransform>().sizeDelta = new Vector2(GetComponent<RectTransform>().sizeDelta.x, 0);
+            }
+            else if(GetComponent<RectTransform>().offsetMax.y > LIMIT_BOTTOM)
+            {
+                GetComponent<RectTransform>().offsetMax = new Vector2(GetComponent<RectTransform>().offsetMax.x, LIMIT_BOTTOM);
+                GetComponent<RectTransform>().sizeDelta = new Vector2(GetComponent<RectTransform>().sizeDelta.x, 0);
             }
 
             //if (GetComponent<RectTransform>().offsetMax.y < 0)
@@ -334,8 +343,8 @@ namespace RecyclerView{
             //}
 
           
-            Vector2 velocity = transform.parent.GetComponent<ScrollRect>().velocity;
-            transform.parent.GetComponent<ScrollRect>().velocity = new Vector2(0, Mathf.Clamp(velocity.y, -1000, 1000));
+      //      Vector2 velocity = transform.parent.GetComponent<ScrollRect>().velocity;
+       //     transform.parent.GetComponent<ScrollRect>().velocity = new Vector2(0, Mathf.Clamp(velocity.y, -1000, 1000));
           //  Debug.Log(transform.parent.GetComponent<ScrollRect>().velocity);
             // Debug.ClearDeveloperConsole();
             // string str = "";
@@ -371,7 +380,7 @@ namespace RecyclerView{
 
 
 
-            Debug.Log(ToString());
+          //  Debug.Log(ToString());
 
         //     int start_new_position = GetCurrentSWtartPosition();
         //     int end_new_position = GetCurrentEndPosition();
@@ -436,9 +445,9 @@ namespace RecyclerView{
             if(top){
                 int nTop =  CACHE_SIZE -cacheTop.Count;
                 for(int i=0; i < nTop; i++ ){
-                    int upper = GetUpperPosition(cacheTop);
-                    if(upper >= 0){
-                        ViewHolder vh = TryGetViewHolderForPosition(GetUpperPosition(cacheTop) + 1);
+                    //int upper = GetUpperPosition(cacheTop);
+                    //if(upper >= 0){
+                        ViewHolder vh = TryGetViewHolderForPosition(GetUpperPosition(cacheTop.Count > 0 ? cacheTop : attachedScrap) + 1);
                         if(vh != null ){
                             vh.itemView.transform.SetParent(transform);              
                             vh.itemView.transform.SetAsLastSibling();                     
@@ -448,13 +457,13 @@ namespace RecyclerView{
                             
                             ThrowToCache(vh, true);
                             OnBindViewHolder((T)Convert.ChangeType(vh, typeof(T)), vh.current_index);
-                        }
+                     //   }
                     }
                 }
             }else{
                 int nBot = CACHE_SIZE -cacheBot.Count;
                 for(int i=0; i < nBot; i++ ){
-                        ViewHolder vh = TryGetViewHolderForPosition(GetLowerPosition(cacheBot) - 1);
+                        ViewHolder vh = TryGetViewHolderForPosition(GetLowerPosition(cacheBot.Count > 0 ? cacheBot : attachedScrap) - 1);
                         if(vh != null){
                             vh.itemView.transform.SetParent(transform);                               
                             vh.itemView.transform.SetAsFirstSibling();               
