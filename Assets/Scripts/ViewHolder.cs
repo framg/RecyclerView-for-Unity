@@ -6,6 +6,7 @@ using UnityEngine;
 namespace RecyclerView{
     public abstract class ViewHolder{
         public GameObject itemView;
+        public RectTransform rectTransform;
 
         public int last_index, current_index;
 
@@ -15,6 +16,7 @@ namespace RecyclerView{
 
         public ViewHolder(GameObject itemView){
             this.itemView = itemView;
+            this.rectTransform = itemView.GetComponent<RectTransform>();
 
         }
 

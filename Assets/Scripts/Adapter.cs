@@ -10,10 +10,12 @@ namespace RecyclerView{
         where T : ViewHolder
     {
         private RectTransform SelfRectTransform { get; set; }
+        private RectTransform ParentRectTransform { get; set; }
         private GameObject poolObj; 
         public ScrollRect scroll;
         public void Awake(){
             SelfRectTransform = GetComponent<RectTransform>();
+            ParentRectTransform = transform.parent.GetComponent<RectTransform>();
             poolObj = new GameObject();
             poolObj.transform.SetParent(transform.parent);
             poolObj.name = "Pool";
@@ -63,14 +65,14 @@ namespace RecyclerView{
                         vh.current_index = i;
                         vh.last_index = i;
                         vh.status = Status.SCRAP;
-
+                        
 
                        AddToAttachedScrap(vh, true);
 
                         OnBindViewHolder((T)Convert.ChangeType(vh, typeof(T)), i);
                 }
                 ReorderList();
-                LIMIT_BOTTOM = (GetItemCount() * attachedScrap[0].itemView.GetComponent<RectTransform>().rect.height) - transform.parent.GetComponent<RectTransform>().rect.height;
+                LIMIT_BOTTOM = (GetItemCount() * attachedScrap[0].rectTransform.rect.height) - ParentRectTransform.rect.height;
             }   
         }     
 
@@ -82,7 +84,7 @@ namespace RecyclerView{
                 vh.itemView.transform.SetAsFirstSibling();
             }
             vh.itemView.name = vh.current_index.ToString();
-            vh.itemView.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 1f);
+            vh.rectTransform.pivot = new Vector2(0.5f, 1f);
             vh.itemView.SetActive(true);
             attachedScrap.Add(vh);
         }
@@ -96,7 +98,7 @@ namespace RecyclerView{
             vhs.AddRange(attachedScrap);
             foreach(ViewHolder vh in vhs)
             {
-                vh.itemView.GetComponent<RectTransform>().localPosition = new Vector3(0, -vh.current_index * 100, 0);
+                vh.rectTransform.localPosition = new Vector3(0, -vh.current_index * 100, 0);
             }
             
         }
@@ -277,7 +279,7 @@ namespace RecyclerView{
                         vh.itemView.transform.SetParent(transform);              
                         vh.itemView.transform.SetAsLastSibling();                     
                         vh.itemView.name = vh.current_index.ToString();
-                        vh.itemView.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 1f);
+                        vh.rectTransform.pivot = new Vector2(0.5f, 1f);
                         vh.itemView.SetActive(true);
                             
                         ThrowToCache(vh, true);
@@ -292,7 +294,7 @@ namespace RecyclerView{
                         vh.itemView.transform.SetParent(transform);                               
                         vh.itemView.transform.SetAsFirstSibling();               
                         vh.itemView.name = vh.current_index.ToString();
-                        vh.itemView.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 1f);
+                        vh.rectTransform.pivot = new Vector2(0.5f, 1f);
                         vh.itemView.SetActive(true);
                         ThrowToCache(vh, false);
                         OnBindViewHolder((T)Convert.ChangeType(vh, typeof(T)), vh.current_index);
@@ -307,7 +309,7 @@ namespace RecyclerView{
             }else{
                 vh.status = Status.RECYCLED;
                 vh.itemView.transform.SetParent(poolObj.transform);
-                vh.itemView.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 1f);
+                vh.rectTransform.pivot = new Vector2(0.5f, 1f);
                 vh.itemView.SetActive(false);
                 pool.Add(vh);
             }
