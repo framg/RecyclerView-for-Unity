@@ -2,14 +2,16 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using static ExampleAdapter;
 
-public class ExampleAdapter : RecyclerView.Adapter<ViewHolder>
+public class ExampleAdapter : RecyclerView.Adapter<ExampleAdapter.ViewHolder>
 {
+
+
+
     public List<GameObject> list = new List<GameObject>();
     void Start(){
      
-        NotifyDatasetChanged();
+        
        // Camera.main.
         //         Vector3[] objectCorners = new Vector3[4];
         // list[0].GetComponent<RectTransform>().GetWorldCorners(objectCorners);
@@ -30,7 +32,6 @@ public class ExampleAdapter : RecyclerView.Adapter<ViewHolder>
     public override GameObject OnCreateViewHolder(Transform parent)
     {
         GameObject row = new GameObject();
-      //  row.transform.SetParent(parent);
         row.AddComponent<CanvasRenderer>();
         GameObject text = new GameObject();
         text.AddComponent<Text>();
@@ -41,6 +42,7 @@ public class ExampleAdapter : RecyclerView.Adapter<ViewHolder>
         list.Add(row);
         return row;
     }
+
 
     // public void Update(){
     //     //yield return new WaitForSeconds(1);

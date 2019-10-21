@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -9,31 +10,25 @@ namespace RecyclerView{
     public abstract class Adapter<T> : MonoBehaviour
         where T : ViewHolder
     {
-        private RectTransform SelfRectTransform { get; set; }
-        private RectTransform ParentRectTransform { get; set; }
-        private GameObject poolObj; 
-        public ScrollRect scroll;
-        public void Awake(){
-            SelfRectTransform = GetComponent<RectTransform>();
-            ParentRectTransform = transform.parent.GetComponent<RectTransform>();
-            poolObj = new GameObject();
-            poolObj.transform.SetParent(transform.parent);
-            poolObj.name = "Pool";
-        }
 
-        public int end_position;
-        public int start_position;
+        public float spacingY;
+
+        private ScrollRect ScrollRect;
+        private RectTransform SelfRectTransform { get; set; }
+        private RectTransform GridRectTransform { get; set; }
+        private GameObject Grid;
+        private GameObject poolObj;
         private int POOL_SIZE = 10;
         private int CACHE_SIZE = 3;
         private float LIMIT_BOTTOM = 0;
 
-        private int ATTACHED_SCRAP_SIZE = 12 ;
-        
+        private int ATTACHED_SCRAP_SIZE = 12;
+
         public Pool pool;
         public List<ViewHolder> attachedScrap = new List<ViewHolder>();
         public List<ViewHolder> cacheTop = new List<ViewHolder>();
         public List<ViewHolder> cacheBot = new List<ViewHolder>();
-        
+
 
 
         public abstract GameObject OnCreateViewHolder(Transform parent);
@@ -42,45 +37,76 @@ namespace RecyclerView{
         public abstract int GetItemCount();
 
 
-        private ViewHolder GetViewHolderFromScrap(int position){
-            foreach(ViewHolder vh in attachedScrap){
-                if(vh.current_index == position){
+        public void Awake()
+        {
+            foreach(Transform child in transform)
+            {
+                Destroy(child.gameObject);
+            }
+
+            SelfRectTransform = GetComponent<RectTransform>();
+            Grid = new GameObject();
+            Grid.name = "Grid";
+            GridRectTransform = Grid.AddComponent<RectTransform>();
+            GridRectTransform.sizeDelta = Vector2.zero;
+            GridRectTransform.anchorMax = new Vector2(0.5f, 1f);
+            GridRectTransform.anchorMin = new Vector2(0.5f, 1f);
+            GridRectTransform.pivot = new Vector2(0.5f, 1f);
+            Grid.transform.SetParent(transform);
+            GridRectTransform.anchoredPosition = Vector3.zero;
+            poolObj = new GameObject();
+            poolObj.transform.SetParent(transform);
+            poolObj.name = "Pool";
+
+            ScrollRect = GetComponent<ScrollRect>();
+            if(ScrollRect == null)
+            {
+                ScrollRect = gameObject.AddComponent<ScrollRect>();
+            }
+            ScrollRect.content = GridRectTransform;
+            ScrollRect.onValueChanged.AddListener(delegate  { OnScroll(); });
+            ScrollRect.vertical = true;
+            ScrollRect.horizontal = false;
+            ScrollRect.viewport = SelfRectTransform;
+            ScrollRect.content = GridRectTransform;
+            ScrollRect.movementType = ScrollRect.MovementType.Unrestricted;
+            ScrollRect.inertia = true;
+            ScrollRect.decelerationRate = 0.5f;
+            ScrollRect.scrollSensitivity = 10f;
+            if (GetComponent<Image>() == null)
+            {
+                Image image = gameObject.AddComponent<Image>();
+                image.color = new Color(0, 0, 0, 0.01f);
+            }
+            if (GetComponent<Mask>() == null)
+            {
+                gameObject.AddComponent<Mask>();
+            }
+            
+            NotifyDatasetChanged();
+        }
+
+        private ViewHolder GetViewHolderFromScrap(int position)
+        {
+            foreach (ViewHolder vh in attachedScrap)
+            {
+                if (vh.current_index == position)
+                {
                     return vh;
                 }
             }
             return null;
         }
 
-
-
-        public void NotifyDatasetChanged(){
-            Clear();
-            pool = new Pool(POOL_SIZE, CACHE_SIZE);
-             
-            if(GetItemCount() > 0){
-                for(int i = 0; i<ATTACHED_SCRAP_SIZE ; i++){
-                        ViewHolder vh = (ViewHolder) Activator.CreateInstance(typeof(T),new object[] { OnCreateViewHolder(transform) } );
-                        
-
-                        vh.current_index = i;
-                        vh.last_index = i;
-                        vh.status = Status.SCRAP;
-                        
-
-                       AddToAttachedScrap(vh, true);
-
-                        OnBindViewHolder((T)Convert.ChangeType(vh, typeof(T)), i);
-                }
-                ReorderList();
-                LIMIT_BOTTOM = (GetItemCount() * attachedScrap[0].rectTransform.rect.height) - ParentRectTransform.rect.height;
-            }   
-        }     
-
-        private void AddToAttachedScrap(ViewHolder vh, bool attachTop){
-            vh.itemView.transform.SetParent(transform);
-            if(attachTop){
+        private void AddToAttachedScrap(ViewHolder vh, bool attachTop)
+        {
+            vh.itemView.transform.SetParent(Grid.transform);
+            if (attachTop)
+            {
                 vh.itemView.transform.SetAsLastSibling();
-            }else{
+            }
+            else
+            {
                 vh.itemView.transform.SetAsFirstSibling();
             }
             vh.itemView.name = vh.current_index.ToString();
@@ -96,14 +122,15 @@ namespace RecyclerView{
             vhs.AddRange(cacheBot);
             vhs.AddRange(cacheTop);
             vhs.AddRange(attachedScrap);
-            foreach(ViewHolder vh in vhs)
+            foreach (ViewHolder vh in vhs)
             {
                 vh.rectTransform.localPosition = new Vector3(0, -vh.current_index * 100, 0);
             }
-            
+
         }
 
-        private ViewHolder GetFromCache(int i, bool top){
+        private ViewHolder GetFromCache(int i, bool top)
+        {
             if (top)
             {
                 foreach (ViewHolder vh in cacheTop)
@@ -129,91 +156,113 @@ namespace RecyclerView{
             return null;
         }
 
-        private ViewHolder TryGetViewHolderForPosition(int position){
-            if(position >= 0 && position < GetItemCount()){
-                    ViewHolder botCache = GetFromCache(position, false);
-                    if(botCache != null){
-                        botCache.status = Status.CACHE;
-                        botCache.current_index = position;
-                        botCache.itemView.name = position.ToString();
-   
-                        return botCache;
-                    }
-                    ViewHolder topCache = GetFromCache(position, true);
-                    if(topCache != null){
-                        topCache.status = Status.CACHE;
-                        topCache.current_index = position;
-                        topCache.itemView.name = position.ToString();
-   
-                        return topCache;
-                    }
-                ViewHolder vhrecycled;
-                    vhrecycled = pool.GetFromPool(position);
-                    if(vhrecycled != null){
-                        vhrecycled.status = Status.RECYCLED;
-                        vhrecycled.last_index = vhrecycled.current_index;
-                        vhrecycled.current_index = position;
-                        return vhrecycled;
-                    }
+        private ViewHolder TryGetViewHolderForPosition(int position)
+        {
+            if (position >= 0 && position < GetItemCount())
+            {
+                ViewHolder botCache = GetFromCache(position, false);
+                if (botCache != null)
+                {
+                    botCache.status = Status.CACHE;
+                    botCache.current_index = position;
+                    botCache.itemView.name = position.ToString();
 
-                    if(pool.IsFull()){
-                        vhrecycled = pool.GetFromPool(position, true);
-                        vhrecycled.status = Status.RECYCLED;
-                        vhrecycled.last_index = vhrecycled.current_index;
-                        vhrecycled.current_index = position;
-                        return vhrecycled;
-                        
-                    }else{
-                        ViewHolder vh = (ViewHolder) Activator.CreateInstance(typeof(T),new object[] { OnCreateViewHolder(transform) } );
-                    
-                        vh.current_index = position;
-                        vh.last_index = position;
-                        vh.status = Status.SCRAP;
-                        
-                        return vh;
-                    }
-                
-            }else{
+                    return botCache;
+                }
+                ViewHolder topCache = GetFromCache(position, true);
+                if (topCache != null)
+                {
+                    topCache.status = Status.CACHE;
+                    topCache.current_index = position;
+                    topCache.itemView.name = position.ToString();
+
+                    return topCache;
+                }
+                ViewHolder vhrecycled;
+                vhrecycled = pool.GetFromPool(position);
+                if (vhrecycled != null)
+                {
+                    vhrecycled.status = Status.RECYCLED;
+                    vhrecycled.last_index = vhrecycled.current_index;
+                    vhrecycled.current_index = position;
+                    return vhrecycled;
+                }
+
+                if (pool.IsFull())
+                {
+                    vhrecycled = pool.GetFromPool(position, true);
+                    vhrecycled.status = Status.RECYCLED;
+                    vhrecycled.last_index = vhrecycled.current_index;
+                    vhrecycled.current_index = position;
+                    return vhrecycled;
+
+                }
+                else
+                {
+                    ViewHolder vh = (ViewHolder)Activator.CreateInstance(typeof(T), new object[] { OnCreateViewHolder(transform) });
+
+                    vh.current_index = position;
+                    vh.last_index = position;
+                    vh.status = Status.SCRAP;
+
+                    return vh;
+                }
+
+            }
+            else
+            {
                 return null;
             }
         }
 
 
-        private int GetLowerPosition(){
+        private int GetLowerPosition()
+        {
             int lower = int.MaxValue;
-            foreach(ViewHolder scrap in attachedScrap){
-                if(scrap.current_index< lower){
+            foreach (ViewHolder scrap in attachedScrap)
+            {
+                if (scrap.current_index < lower)
+                {
                     lower = scrap.current_index;
                 }
             }
             return lower;
         }
 
-        private int GetUpperPosition(){
+        private int GetUpperPosition()
+        {
             int upper = 0;
-            foreach(ViewHolder scrap in attachedScrap){
-                if(scrap.current_index > upper){
+            foreach (ViewHolder scrap in attachedScrap)
+            {
+                if (scrap.current_index > upper)
+                {
                     upper = scrap.current_index;
                 }
             }
             return upper;
         }
 
-        private int GetLowerChild(){
+        private int GetLowerChild()
+        {
             int lower = int.MaxValue;
-            foreach(ViewHolder scrap in attachedScrap){
-                if(scrap.itemView.transform.GetSiblingIndex() < lower){
+            foreach (ViewHolder scrap in attachedScrap)
+            {
+                if (scrap.itemView.transform.GetSiblingIndex() < lower)
+                {
                     lower = scrap.itemView.transform.GetSiblingIndex();
                 }
             }
             return lower;
         }
 
-        
-        private int GetUpperChild(){
+
+        private int GetUpperChild()
+        {
             int upper = 0;
-            foreach(ViewHolder scrap in attachedScrap){
-                if(scrap.itemView.transform.GetSiblingIndex() > upper){
+            foreach (ViewHolder scrap in attachedScrap)
+            {
+                if (scrap.itemView.transform.GetSiblingIndex() > upper)
+                {
                     upper = scrap.itemView.transform.GetSiblingIndex();
                 }
             }
@@ -223,21 +272,22 @@ namespace RecyclerView{
 
         private void ClampList()
         {
-            if (SelfRectTransform.offsetMax.y < 0)
+            if (GridRectTransform.offsetMax.y < 0)
             {
-                SelfRectTransform.offsetMax = new Vector2(SelfRectTransform.offsetMax.x, 0);
-                SelfRectTransform.sizeDelta = new Vector2(SelfRectTransform.sizeDelta.x, 0);
+                GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, 0);
+                GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
             }
-            else if (SelfRectTransform.offsetMax.y > LIMIT_BOTTOM)
+            else if (GridRectTransform.offsetMax.y > LIMIT_BOTTOM)
             {
-                SelfRectTransform.offsetMax = new Vector2(SelfRectTransform.offsetMax.x, LIMIT_BOTTOM);
-                SelfRectTransform.sizeDelta = new Vector2(SelfRectTransform.sizeDelta.x, 0);
+                GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, LIMIT_BOTTOM);
+                GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
             }
         }
 
 
-        public void OnScroll(Vector2 pos){
-
+        public void OnScroll()
+        {
+      //      Debug.Log("TEST");
             ClampList();
             RemoveNotVisibleViewHolders();
             RemoveViewHoldersFromCache(true);
@@ -245,54 +295,68 @@ namespace RecyclerView{
             AddNewViewHoldersToCache(true);
             AddNewViewHoldersToCache(false);
             ReorderList();
+           // Debug.Log(ToString());
         }
 
 
-        public override string ToString(){
-            string str  = "";
-            str+= "Attached: {";
-            foreach(ViewHolder vh in attachedScrap){
-                str+= vh.current_index + ",";
+        public override string ToString()
+        {
+            string str = "";
+            str += "Attached: {";
+            foreach (ViewHolder vh in attachedScrap)
+            {
+                str += vh.current_index + ",";
             }
             str += "} Cache Top: {";
-            foreach(ViewHolder vh in cacheTop){
-                str+= vh.current_index + ",";
+            foreach (ViewHolder vh in cacheTop)
+            {
+                str += vh.current_index + ",";
             }
             str += "} Cache Bot: {";
-            foreach(ViewHolder vh in cacheBot){
-                str+= vh.current_index + ",";
+            foreach (ViewHolder vh in cacheBot)
+            {
+                str += vh.current_index + ",";
             }
             str += "} Pool: {";
-            foreach(ViewHolder vh in pool.Scrap){
-                str+= vh.current_index + ",";
+            foreach (ViewHolder vh in pool.Scrap)
+            {
+                str += vh.current_index + ",";
             }
             str += "}";
             return str;
         }
 
-        private void AddNewViewHoldersToCache(bool top){
-            if(top){
-                int nTop =  CACHE_SIZE - cacheTop.Count;
-                for(int i=0; i < nTop; i++ ){
+        private void AddNewViewHoldersToCache(bool top)
+        {
+            if (top)
+            {
+                int nTop = CACHE_SIZE - cacheTop.Count;
+                for (int i = 0; i < nTop; i++)
+                {
                     ViewHolder vh = TryGetViewHolderForPosition(GetUpperPosition(cacheTop.Count > 0 ? cacheTop : attachedScrap) + 1);
-                    if(vh != null ){
-                        vh.itemView.transform.SetParent(transform);              
-                        vh.itemView.transform.SetAsLastSibling();                     
+                    if (vh != null)
+                    {
+                        vh.itemView.transform.SetParent(Grid.transform);
+                        vh.itemView.transform.SetAsLastSibling();
                         vh.itemView.name = vh.current_index.ToString();
                         vh.rectTransform.pivot = new Vector2(0.5f, 1f);
                         vh.itemView.SetActive(true);
-                            
+
                         ThrowToCache(vh, true);
-                        OnBindViewHolder((T)Convert.ChangeType(vh, typeof(T)), vh.current_index);    
+                        OnBindViewHolder((T)Convert.ChangeType(vh, typeof(T)), vh.current_index);
                     }
                 }
-            }else{
+            }
+            else
+            {
                 int nBot = CACHE_SIZE - cacheBot.Count;
-                for(int i=0; i < nBot; i++ ){
+                for (int i = 0; i < nBot; i++)
+                {
                     ViewHolder vh = TryGetViewHolderForPosition(GetLowerPosition(cacheBot.Count > 0 ? cacheBot : attachedScrap) - 1);
-                    if(vh != null){
-                        vh.itemView.transform.SetParent(transform);                               
-                        vh.itemView.transform.SetAsFirstSibling();               
+                    if (vh != null)
+                    {
+                        vh.itemView.transform.SetParent(Grid.transform);
+                        vh.itemView.transform.SetAsFirstSibling();
                         vh.itemView.name = vh.current_index.ToString();
                         vh.rectTransform.pivot = new Vector2(0.5f, 1f);
                         vh.itemView.SetActive(true);
@@ -303,10 +367,14 @@ namespace RecyclerView{
             }
         }
 
-        private void ThrowToPool(ViewHolder vh){
-            if(pool.IsFull()){
+        private void ThrowToPool(ViewHolder vh)
+        {
+            if (pool.IsFull())
+            {
                 vh.Destroy();
-            }else{
+            }
+            else
+            {
                 vh.status = Status.RECYCLED;
                 vh.itemView.transform.SetParent(poolObj.transform);
                 vh.rectTransform.pivot = new Vector2(0.5f, 1f);
@@ -315,18 +383,23 @@ namespace RecyclerView{
             }
         }
 
- 
 
-        private void ThrowToCache(ViewHolder viewHolder, bool top){
+
+        private void ThrowToCache(ViewHolder viewHolder, bool top)
+        {
             viewHolder.status = Status.CACHE;
-            if(top){
-                cacheTop .Add(viewHolder);
-            }else{
+            if (top)
+            {
+                cacheTop.Add(viewHolder);
+            }
+            else
+            {
                 cacheBot.Add(viewHolder);
-            } 
+            }
         }
 
-        private void RemoveNotVisibleViewHolders(){
+        private void RemoveNotVisibleViewHolders()
+        {
             attachedScrap.AddRange(cacheTop);
             attachedScrap.AddRange(cacheBot);
             cacheTop.Clear();
@@ -363,71 +436,124 @@ namespace RecyclerView{
             }
         }
 
-    private void RemoveViewHoldersFromCache(bool top){
-        if(top){
-            Sort(cacheTop, true);
-            if(cacheTop.Count > CACHE_SIZE){
-                for(int i=cacheTop.Count - 1; i>=CACHE_SIZE; i--){
-                    ThrowToPool(cacheTop[i]);
-                    cacheTop.RemoveAt(i);
+        private void RemoveViewHoldersFromCache(bool top)
+        {
+            if (top)
+            {
+                Sort(cacheTop, true);
+                if (cacheTop.Count > CACHE_SIZE)
+                {
+                    for (int i = cacheTop.Count - 1; i >= CACHE_SIZE; i--)
+                    {
+                        ThrowToPool(cacheTop[i]);
+                        cacheTop.RemoveAt(i);
+                    }
                 }
             }
-        }else{
-            Sort(cacheBot, false);
-            if(cacheBot.Count > CACHE_SIZE){
-                for(int i=cacheBot.Count - 1; i>=CACHE_SIZE; i--){
-                    ThrowToPool(cacheBot[i]);
-                    cacheBot.RemoveAt(i);
+            else
+            {
+                Sort(cacheBot, false);
+                if (cacheBot.Count > CACHE_SIZE)
+                {
+                    for (int i = cacheBot.Count - 1; i >= CACHE_SIZE; i--)
+                    {
+                        ThrowToPool(cacheBot[i]);
+                        cacheBot.RemoveAt(i);
+                    }
                 }
             }
         }
-    }
 
-    private void Sort(List<ViewHolder> list, bool upperFirst){
-        for(int i=0; i<list.Count; i++){
-            for(int j=i+1; j<list.Count; j++){
-                if(upperFirst){
-                    if(list[i].current_index > list[j].current_index){
-                        ViewHolder aux = list[i];
-                        list[i] = list[j];
-                        list[j] = aux;
+        private void Sort(List<ViewHolder> list, bool upperFirst)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                for (int j = i + 1; j < list.Count; j++)
+                {
+                    if (upperFirst)
+                    {
+                        if (list[i].current_index > list[j].current_index)
+                        {
+                            ViewHolder aux = list[i];
+                            list[i] = list[j];
+                            list[j] = aux;
+                        }
                     }
-                }else{
-                    if(list[i].current_index < list[j].current_index){
-                        ViewHolder aux = list[i];
-                        list[i] = list[j];
-                        list[j] = aux;
+                    else
+                    {
+                        if (list[i].current_index < list[j].current_index)
+                        {
+                            ViewHolder aux = list[i];
+                            list[i] = list[j];
+                            list[j] = aux;
+                        }
                     }
                 }
             }
         }
-    }
-     private int GetLowerPosition(List<ViewHolder> list){
+        private int GetLowerPosition(List<ViewHolder> list)
+        {
             int lower = int.MaxValue;
-            foreach(ViewHolder scrap in list){
-                if(scrap.current_index< lower){
+            foreach (ViewHolder scrap in list)
+            {
+                if (scrap.current_index < lower)
+                {
                     lower = scrap.current_index;
                 }
             }
             return lower != int.MaxValue ? lower : -1;
         }
 
-        private int GetUpperPosition(List<ViewHolder> list){
+        private int GetUpperPosition(List<ViewHolder> list)
+        {
             int upper = -1;
-            foreach(ViewHolder scrap in list){
-                if(scrap.current_index > upper){
+            foreach (ViewHolder scrap in list)
+            {
+                if (scrap.current_index > upper)
+                {
                     upper = scrap.current_index;
                 }
             }
             return upper;
         }
-        private void Clear(){
-            foreach(Transform row in transform){
+        private void Clear()
+        {
+            foreach (Transform row in Grid.transform)
+            {
                 Destroy(row.gameObject);
             }
 
             attachedScrap.Clear();
 
         }
+
+        public void NotifyDatasetChanged()
+        {
+            Clear();
+
+            pool = new Pool(POOL_SIZE, CACHE_SIZE);
+
+            if (GetItemCount() > 0)
+            {
+                for (int i = 0; i < ATTACHED_SCRAP_SIZE; i++)
+                {
+                    ViewHolder vh = (T)Activator.CreateInstance(typeof(T), new object[] { OnCreateViewHolder(transform) });
+
+
+                    vh.current_index = i;
+                    vh.last_index = i;
+                    vh.status = Status.SCRAP;
+
+
+                    AddToAttachedScrap(vh, true);
+
+                    OnBindViewHolder((T)Convert.ChangeType(vh, typeof(T)), i);
+                }
+                ReorderList();
+                LIMIT_BOTTOM = (GetItemCount() * attachedScrap[0].rectTransform.rect.height) - SelfRectTransform.rect.height;
+            }
+        }
+
+
     }
 }
