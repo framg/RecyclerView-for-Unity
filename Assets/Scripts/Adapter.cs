@@ -18,7 +18,6 @@ namespace RecyclerView{
         private RectTransform SelfRectTransform { get; set; }
         private RectTransform GridRectTransform { get; set; }
         private GameObject Grid;
-        private GameObject poolObj;
         private int POOL_SIZE = 10;
         private int CACHE_SIZE = 3;
         private float LIMIT_BOTTOM = 0;
@@ -55,9 +54,6 @@ namespace RecyclerView{
             GridRectTransform.pivot = new Vector2(0.5f, 1f);
             Grid.transform.SetParent(transform);
             GridRectTransform.anchoredPosition = Vector3.zero;
-            poolObj = new GameObject();
-            poolObj.transform.SetParent(transform);
-            poolObj.name = "Pool";
 
             ScrollRect = GetComponent<ScrollRect>();
             if(ScrollRect == null)
@@ -125,7 +121,10 @@ namespace RecyclerView{
             vhs.AddRange(attachedScrap);
             foreach (ViewHolder vh in vhs)
             {
-                vh.rectTransform.localPosition = new Vector3(0, (-vh.current_index * (100 + spacingY)) , 0);
+                if (vh.status != Status.RECYCLED)
+                {
+                    vh.rectTransform.localPosition = new Vector3(0, (-vh.current_index * (100 + spacingY)), 0);
+                }
             }
 
         }
@@ -183,7 +182,7 @@ namespace RecyclerView{
                 vhrecycled = pool.GetFromPool(position);
                 if (vhrecycled != null)
                 {
-                    vhrecycled.status = Status.RECYCLED;
+                    vhrecycled.status = Status.SCRAP;
                     vhrecycled.last_index = vhrecycled.current_index;
                     vhrecycled.current_index = position;
                     return vhrecycled;
@@ -192,7 +191,7 @@ namespace RecyclerView{
                 if (pool.IsFull())
                 {
                     vhrecycled = pool.GetFromPool(position, true);
-                    vhrecycled.status = Status.RECYCLED;
+                    vhrecycled.status = Status.SCRAP;
                     vhrecycled.last_index = vhrecycled.current_index;
                     vhrecycled.current_index = position;
                     return vhrecycled;
@@ -425,7 +424,6 @@ namespace RecyclerView{
             else
             {
                 vh.status = Status.RECYCLED;
-                vh.itemView.transform.SetParent(poolObj.transform);
                 vh.rectTransform.pivot = new Vector2(0.5f, 1f);
                 vh.itemView.SetActive(false);
                 pool.Add(vh);
@@ -574,10 +572,10 @@ namespace RecyclerView{
 
             attachedScrap.Clear();
             
-            foreach(Transform row in poolObj.transform)
-            {
-                Destroy(row.gameObject);
-            }
+            //foreach(Transform row in poolObj.transform)
+            //{
+            //    Destroy(row.gameObject);
+            //}
 
             pool = null;
 
