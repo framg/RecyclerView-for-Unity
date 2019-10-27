@@ -12,6 +12,7 @@ namespace RecyclerView{
     {
 
         public float spacingY;
+        private float rowHeight;
 
         private ScrollRect ScrollRect;
         private RectTransform SelfRectTransform { get; set; }
@@ -124,7 +125,7 @@ namespace RecyclerView{
             vhs.AddRange(attachedScrap);
             foreach (ViewHolder vh in vhs)
             {
-                vh.rectTransform.localPosition = new Vector3(0, -vh.current_index * 100, 0);
+                vh.rectTransform.localPosition = new Vector3(0, (-vh.current_index * (100 + spacingY)) , 0);
             }
 
         }
@@ -284,10 +285,53 @@ namespace RecyclerView{
             }
         }
 
+        private void OnGUI()
+        {
+            if (GUI.Button(new Rect(10, 70, 50, 30), "Click"))
+            {
+               // StartCoroutine(INotifyDatasetChanged(20));
+                //NotifyDatasetChanged(20);
+               // StartCoroutine(ScrollTo(new Vector2(0, 1f)));
+             //   GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, 2000);
+             //   OnScroll();
+            }
+        }
+        
+        public void ScrollToPosition(int i)
+        {
+
+        }
+
+
+        private IEnumerator ScrollTo(Vector2 dir, float speed = 100)
+        {
+            Vector2 v = new Vector2(0, dir.y * LIMIT_BOTTOM);
+            ScrollRect.inertia = false;
+            bool goUp = GridRectTransform.offsetMax.y > v.y;
+            float y = GridRectTransform.offsetMax.y;
+            while (goUp ? GridRectTransform.offsetMax.y > v.y : GridRectTransform.offsetMax.y < v.y)
+            {
+                y += goUp ? -speed : speed;
+                GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, y);
+                GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
+                OnScroll();
+                yield return new WaitForEndOfFrame();
+
+            }
+            ScrollRect.inertia = true;
+        }
+
+
+        private void Snap()
+        {
+            int pos = Mathf.FloorToInt(GridRectTransform.offsetMax.y / (rowHeight + spacingY));
+            GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, (rowHeight + spacingY) * pos);
+            GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
+        }
 
         public void OnScroll()
         {
-      //      Debug.Log("TEST");
+
             ClampList();
             RemoveNotVisibleViewHolders();
             RemoveViewHoldersFromCache(true);
@@ -295,7 +339,12 @@ namespace RecyclerView{
             AddNewViewHoldersToCache(true);
             AddNewViewHoldersToCache(false);
             ReorderList();
-           // Debug.Log(ToString());
+
+            //if(Mathf.Abs(ScrollRect.velocity.y) < 50)
+            //{
+            //    Snap();
+            //}
+          // Debug.Log(ScrollRect.velocity);
         }
 
 
@@ -524,10 +573,20 @@ namespace RecyclerView{
             }
 
             attachedScrap.Clear();
+            
+            foreach(Transform row in poolObj.transform)
+            {
+                Destroy(row.gameObject);
+            }
+
+            pool = null;
+
+            cacheBot.Clear();
+            cacheTop.Clear();
 
         }
 
-        public void NotifyDatasetChanged()
+        public void NotifyDatasetChanged(int pos  = 0)
         {
             Clear();
 
@@ -535,7 +594,7 @@ namespace RecyclerView{
 
             if (GetItemCount() > 0)
             {
-                for (int i = 0; i < ATTACHED_SCRAP_SIZE; i++)
+                for (int i = pos; i < ATTACHED_SCRAP_SIZE + pos; i++)
                 {
                     ViewHolder vh = (T)Activator.CreateInstance(typeof(T), new object[] { OnCreateViewHolder(transform) });
 
@@ -549,9 +608,22 @@ namespace RecyclerView{
 
                     OnBindViewHolder((T)Convert.ChangeType(vh, typeof(T)), i);
                 }
-                ReorderList();
-                LIMIT_BOTTOM = (GetItemCount() * attachedScrap[0].rectTransform.rect.height) - SelfRectTransform.rect.height;
+                rowHeight = attachedScrap[0].rectTransform.rect.height;
+                LIMIT_BOTTOM = ((GetItemCount() * (attachedScrap[0].rectTransform.rect.height + spacingY)) - SelfRectTransform.rect.height) - spacingY;
+                GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, (attachedScrap[0].rectTransform.rect.height + spacingY) * pos);
+                GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
+
+                ReorderList();                
             }
+        }
+
+        private IEnumerator INotifyDatasetChanged(int pos = 0)
+        {
+            ScrollRect.inertia = false;
+            NotifyDatasetChanged(pos);
+            yield return new WaitForEndOfFrame();
+            OnScroll();
+            ScrollRect.inertia = true;
         }
 
 
