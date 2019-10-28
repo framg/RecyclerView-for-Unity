@@ -98,6 +98,18 @@ public class ExampleAdapter : RecyclerView.Adapter<ExampleAdapter.ViewHolder>
     }
 
 
+    void OnGUI()
+    {
+
+
+        if (GUI.Button(new Rect(10, 70, 50, 30), "Click"))
+        {
+            SmothScrollTo(30);
+           // ScrollTo(new Vector2(0, 0.5f));
+        }
+            
+    }
+
     bool isRectInsideAnotherRect(){
         return false;
     }
