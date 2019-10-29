@@ -8,16 +8,59 @@ using UnityEngine.UI;
 namespace RecyclerView
 {
 
-    public class Menu : MonoBehaviour
+    public class Menu : EditorWindow
     {
+      // string inputName = "";
+
+
+        string objNames = "";
+
+
+        void OnGUI()
+        {
+            EditorGUI.DropShadowLabel(new Rect(0, 0, position.width, 20),
+                "Choose a name for the adapter:");
+
+            objNames = EditorGUI.TextField(new Rect(10, 25, position.width - 20, 20),
+                "Name:",
+                objNames);
+
+           // if (Selection.activeTransform)
+         //   {
+                if (GUI.Button(new Rect(0, 50, position.width, 30), "Create"))
+                {
+                
+                //foreach (Transform t in Selection.transforms)
+                //{
+                //    t.name = objNames;
+                //  //  var window = GetWindow<Menu>();
+                //    this.Close();
+                //}
+                
+                Selection.activeTransform = Create(objNames);
+                Close();
+                }
+          //  }
+        }
+
+        void OnInspectorUpdate()
+        {
+            Repaint();
+        }
 
         [MenuItem("GameObject/UI/RecyclerView", false, 0)]
         static void CreateCustomGameObject(MenuCommand menuCommand)
         {
-            Create();
+            var window = ScriptableObject.CreateInstance<Menu>();
+            window.Show();
+            //Menu window = ScriptableObject.CreateInstance<Menu>();
+            //window.position = new Rect(Screen.width * 2, Screen.height / 2, 250, 150);
+            //window.ShowPopup();
+
+            //Create();
         }
 
-        private static void Create()
+        private static Transform Create(string name)
         {
             Canvas canvas = FindObjectOfType<Canvas>();
             if(canvas == null)
@@ -27,32 +70,53 @@ namespace RecyclerView
                 canvasObj.AddComponent<Canvas>();
                 canvasObj.AddComponent<CanvasScaler>();
                 canvasObj.AddComponent<GraphicRaycaster>();
+            }
 
-                
-            }
-            else
-            {
-                GameObject script = new GameObject();
-                script.name = "RecyclerView";
-                script.AddComponent<RectTransform>();
-                script.transform.SetParent(canvas.transform);
-                CreateScript(script);
-            }
+            GameObject script = new GameObject();
+            script.name = name;
+            script.AddComponent<RectTransform>();
+            script.transform.SetParent(canvas.transform);
+            CreateScript(script);
+            return script.transform;
         }
+
+
+        //void OnGUI()
+        //{
+        //    //EditorGUILayout.LabelField("Choose a name for the adapter:", EditorStyles.wordWrappedLabel);
+        //    EditorGUI.LabelField(new Rect(10, 25, 240, 25), inputName);
+        // //  EditorGUI.LabelField(new Rect(10, 25, 240, 25), "Choose a name for the adapter:");
+        //    EditorGUI.TextField(new Rect(10, 50, 240, 25), inputName);
+        //   // Debug.Log(inputName);
+        //    GUILayout.Space(85);
+        //    if (GUILayout.Button("Create"))
+        //    {
+        //       // if (inputName != null && !inputName.Equals(""))
+        //        {
+        //           // Create(inputName);
+        //            this.Close();
+        //        }
+        //    }
+        //}
 
         private static void CreateScript(GameObject obj)
         {
-            string name ;
+            string name = obj.name;
             string copyPath;
             MonoScript script;
-            int i = 0;
-            do {           
-                name = "RecyclerViewAdapter" + i;
-                copyPath = "Assets/" + name + ".cs";
-                script = (MonoScript)AssetDatabase.LoadAssetAtPath(copyPath, typeof(MonoScript));
-                i++;
-            } while (script != null);
-           
+            int i = 1;
+            copyPath = "Assets/" + name + ".cs";
+            script = (MonoScript)AssetDatabase.LoadAssetAtPath(copyPath, typeof(MonoScript));
+            if (script != null)
+            {
+                do
+                {
+                    name = obj.name + i;
+                    copyPath = "Assets/" + name + ".cs";
+                    script = (MonoScript)AssetDatabase.LoadAssetAtPath(copyPath, typeof(MonoScript));
+                    i++;
+                } while (script != null);
+            }
             
             if (File.Exists(copyPath) == false)
             { // do not overwrite
@@ -111,7 +175,7 @@ namespace RecyclerView
             AssetDatabase.Refresh();
             CompileScript compileScript = obj.AddComponent<CompileScript>();
             compileScript.ScriptName = name;
-            AssetDatabase.OpenAsset((MonoScript)AssetDatabase.LoadAssetAtPath(copyPath, typeof(MonoScript)));
+           // AssetDatabase.OpenAsset((MonoScript)AssetDatabase.LoadAssetAtPath(copyPath, typeof(MonoScript)));
         }
 
     }

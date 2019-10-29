@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 namespace RecyclerView
 {
@@ -18,12 +19,9 @@ namespace RecyclerView
         protected GameObject Grid;
         protected int POOL_SIZE = 10;
         protected int CACHE_SIZE = 3;
-        protected float LIMIT_BOTTOM = 0;
+        public float LIMIT_BOTTOM = 0;
 
-        private bool isDraging, isClickDown;
-
-
-        protected int ATTACHED_SCRAP_SIZE = 12;
+        private bool isDraging, isClickDown;      
 
         public Pool pool;
         public List<ViewHolder> attachedScrap = new List<ViewHolder>();
@@ -79,6 +77,24 @@ namespace RecyclerView
             {
                 gameObject.AddComponent<Mask>();
             }
+
+
+            EventTrigger eventTrigger = gameObject.AddComponent<EventTrigger>();
+            EventTrigger.Entry pointup = new EventTrigger.Entry();
+            pointup.eventID = EventTriggerType.PointerUp;
+            pointup.callback.AddListener((data) => { OnClickUp(); });
+            eventTrigger.triggers.Add(pointup);
+
+            EventTrigger.Entry pointdown = new EventTrigger.Entry();
+            pointdown.eventID = EventTriggerType.PointerDown;
+            pointdown.callback.AddListener((data) => { OnClickDown(); });
+            eventTrigger.triggers.Add(pointdown);
+
+            EventTrigger.Entry drag = new EventTrigger.Entry();
+            drag.eventID = EventTriggerType.Drag;
+            drag.callback.AddListener((data) => { OnDrag(); });
+            eventTrigger.triggers.Add(drag);
+
             NotifyDatasetChanged();
         }
 
@@ -122,7 +138,7 @@ namespace RecyclerView
             {
                 if (vh.status != Status.RECYCLED)
                 {
-                    vh.rectTransform.localPosition = new Vector3(0, (-vh.current_index * (100 + spacingY)), 0);
+                    vh.rectTransform.localPosition = new Vector3(0, (-vh.current_index * (rowHeight + spacingY)), 0);
                 }
             }
 
