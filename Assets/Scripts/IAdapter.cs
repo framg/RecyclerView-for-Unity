@@ -12,6 +12,5 @@ namespace RecyclerView
         GameObject OnCreateViewHolder(Transform parent);
         void OnBindViewHolder(T holder,  int i);
         int GetItemCount();
-        void NotifyDatasetChanged(int pos = 0);
     }
 }

@@ -25,7 +25,29 @@ namespace RecyclerView{
         }
 
         public bool IsHidden(){
-            return !itemView.GetComponent<RectTransform>().IsVisibleFrom(Camera.main);
+            return !IsVisibleFrom(itemView.GetComponent<RectTransform>(), Camera.main);
+        }
+
+        private static bool IsVisibleFrom(RectTransform rectTransform, Camera camera)
+        {
+            return CountCornersVisibleFrom(rectTransform, camera) > 0; 
+        }
+        private static int CountCornersVisibleFrom(RectTransform rectTransform, Camera camera)
+        {
+            Rect screenBounds = new Rect(0f, 0f, Screen.width, Screen.height); 
+            Vector3[] objectCorners = new Vector3[4];
+            rectTransform.GetWorldCorners(objectCorners);
+
+            int visibleCorners = 0;
+            for (var i = 0; i < objectCorners.Length; i++) 
+            {
+                
+                if (screenBounds.Contains(objectCorners[i])) 
+                {
+                    visibleCorners++;
+                }
+            }
+            return visibleCorners;
         }
 
         public int CompareTo(ViewHolder vh){

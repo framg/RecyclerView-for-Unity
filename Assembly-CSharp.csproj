@@ -66,10 +66,10 @@
     <Compile Include="Assets\Scripts\CompileScript.cs" />
     <Compile Include="Assets\Scripts\ExampleAdapter.cs" />
     <Compile Include="Assets\Scripts\IAdapter.cs" />
+    <Compile Include="Assets\Scripts\IDataObservable.cs" />
     <Compile Include="Assets\Scripts\IRecyclerView.cs" />
     <Compile Include="Assets\Scripts\Menu.cs" />
     <Compile Include="Assets\Scripts\RecyclerView.cs" />
-    <Compile Include="Assets\Scripts\RendererExtensions.cs" />
     <Compile Include="Assets\Scripts\ViewHolder.cs" />
     <Reference Include="Unity.Timeline.Editor">
       <HintPath>C:/Users/framg/Proyectos/RecyclerView/Library/ScriptAssemblies/Unity.Timeline.Editor.dll</HintPath>

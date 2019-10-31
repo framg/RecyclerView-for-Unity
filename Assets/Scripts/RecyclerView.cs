@@ -11,23 +11,22 @@ namespace RecyclerView
         where T : ViewHolder
     {
         public float spacingY;
-        protected float rowHeight;
+        private float rowHeight;
 
-        protected ScrollRect ScrollRect;
-        protected RectTransform SelfRectTransform { get; set; }
-        protected RectTransform GridRectTransform { get; set; }
-        protected GameObject Grid;
-        protected int POOL_SIZE = 10;
-        protected int CACHE_SIZE = 3;
-        public float LIMIT_BOTTOM = 0;
+        private ScrollRect ScrollRect;
+        private RectTransform SelfRectTransform { get; set; }
+        private RectTransform GridRectTransform { get; set; }
+        private GameObject Grid;
+        private int POOL_SIZE = 10;
+        private int CACHE_SIZE = 3;
+        private float LIMIT_BOTTOM = 0;
 
-        private bool isDraging, isClickDown;      
+        private bool isDraging, isClickDown;
 
-        public Pool pool;
-        public List<ViewHolder> attachedScrap = new List<ViewHolder>();
-        public List<ViewHolder> cacheTop = new List<ViewHolder>();
-        public List<ViewHolder> cacheBot = new List<ViewHolder>();
-        public abstract void NotifyDatasetChanged(int pos = 0);
+        private Pool pool;
+        private List<ViewHolder> attachedScrap = new List<ViewHolder>();
+        private List<ViewHolder> cacheTop = new List<ViewHolder>();
+        private List<ViewHolder> cacheBot = new List<ViewHolder>();
 
 
         public abstract GameObject OnCreateViewHolder(Transform parent);
@@ -78,27 +77,29 @@ namespace RecyclerView
                 gameObject.AddComponent<Mask>();
             }
 
+            if (gameObject.GetComponent<EventTrigger>() == null)
+            {
+                EventTrigger eventTrigger = gameObject.AddComponent<EventTrigger>();
+                EventTrigger.Entry pointup = new EventTrigger.Entry();
+                pointup.eventID = EventTriggerType.PointerUp;
+                pointup.callback.AddListener((data) => { OnClickUp(); });
+                eventTrigger.triggers.Add(pointup);
 
-            EventTrigger eventTrigger = gameObject.AddComponent<EventTrigger>();
-            EventTrigger.Entry pointup = new EventTrigger.Entry();
-            pointup.eventID = EventTriggerType.PointerUp;
-            pointup.callback.AddListener((data) => { OnClickUp(); });
-            eventTrigger.triggers.Add(pointup);
+                EventTrigger.Entry pointdown = new EventTrigger.Entry();
+                pointdown.eventID = EventTriggerType.PointerDown;
+                pointdown.callback.AddListener((data) => { OnClickDown(); });
+                eventTrigger.triggers.Add(pointdown);
 
-            EventTrigger.Entry pointdown = new EventTrigger.Entry();
-            pointdown.eventID = EventTriggerType.PointerDown;
-            pointdown.callback.AddListener((data) => { OnClickDown(); });
-            eventTrigger.triggers.Add(pointdown);
+                EventTrigger.Entry drag = new EventTrigger.Entry();
+                drag.eventID = EventTriggerType.Drag;
+                drag.callback.AddListener((data) => { OnDrag(); });
+                eventTrigger.triggers.Add(drag);
+            }
 
-            EventTrigger.Entry drag = new EventTrigger.Entry();
-            drag.eventID = EventTriggerType.Drag;
-            drag.callback.AddListener((data) => { OnDrag(); });
-            eventTrigger.triggers.Add(drag);
-
-            NotifyDatasetChanged();
+            OnDataChange();
         }
 
-        protected ViewHolder GetViewHolderFromScrap(int position)
+        private ViewHolder GetViewHolderFromScrap(int position)
         {
             foreach (ViewHolder vh in attachedScrap)
             {
@@ -110,7 +111,7 @@ namespace RecyclerView
             return null;
         }
 
-        protected void AddToAttachedScrap(ViewHolder vh, bool attachTop)
+        private void AddToAttachedScrap(ViewHolder vh, bool attachTop)
         {
             vh.itemView.transform.SetParent(Grid.transform);
             if (attachTop)
@@ -128,7 +129,7 @@ namespace RecyclerView
         }
 
 
-        protected void ReorderList()
+        private void ReorderList()
         {
             List<ViewHolder> vhs = new List<ViewHolder>();
             vhs.AddRange(cacheBot);
@@ -144,7 +145,7 @@ namespace RecyclerView
 
         }
 
-        protected ViewHolder GetFromCache(int i, bool top)
+        private ViewHolder GetFromCache(int i, bool top)
         {
             if (top)
             {
@@ -171,7 +172,7 @@ namespace RecyclerView
             return null;
         }
 
-        protected ViewHolder TryGetViewHolderForPosition(int position)
+        private ViewHolder TryGetViewHolderForPosition(int position)
         {
             if (position >= 0 && position < GetItemCount())
             {
@@ -231,7 +232,7 @@ namespace RecyclerView
         }
 
 
-        protected int GetLowerPosition()
+        private int GetLowerPosition()
         {
             int lower = int.MaxValue;
             foreach (ViewHolder scrap in attachedScrap)
@@ -244,7 +245,7 @@ namespace RecyclerView
             return lower;
         }
 
-        protected int GetUpperPosition()
+        private int GetUpperPosition()
         {
             int upper = 0;
             foreach (ViewHolder scrap in attachedScrap)
@@ -257,7 +258,7 @@ namespace RecyclerView
             return upper;
         }
 
-        protected int GetLowerChild()
+        private int GetLowerChild()
         {
             int lower = int.MaxValue;
             foreach (ViewHolder scrap in attachedScrap)
@@ -271,7 +272,7 @@ namespace RecyclerView
         }
 
 
-        protected int GetUpperChild()
+        private int GetUpperChild()
         {
             int upper = 0;
             foreach (ViewHolder scrap in attachedScrap)
@@ -285,7 +286,7 @@ namespace RecyclerView
         }
 
 
-        protected void ClampList()
+        private void ClampList()
         {
             if (GridRectTransform.offsetMax.y < 0)
             {
@@ -300,7 +301,7 @@ namespace RecyclerView
         }
 
 
-        protected void Snap()
+        private void Snap()
         {
             int pos = Mathf.FloorToInt(GridRectTransform.offsetMax.y / (rowHeight + spacingY));
             GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, (rowHeight + spacingY) * pos);
@@ -309,22 +310,22 @@ namespace RecyclerView
 
 
 
-        public void OnDrag() {
+        private void OnDrag() {
             isDraging = true;
         }
 
-        public void OnClickDown()
+        private void OnClickDown()
         {
             isClickDown = true;
         }
 
-        public void OnClickUp()
+        private void OnClickUp()
         {
             isDraging = false;
             isClickDown = false;
         }
 
-        public void OnScroll()
+        private void OnScroll()
         {
 
             ClampList();
@@ -370,7 +371,7 @@ namespace RecyclerView
             return str;
         }
 
-        protected void AddNewViewHoldersToCache(bool top)
+        private void AddNewViewHoldersToCache(bool top)
         {
             if (top)
             {
@@ -411,7 +412,7 @@ namespace RecyclerView
             }
         }
 
-        protected void ThrowToPool(ViewHolder vh)
+        private void ThrowToPool(ViewHolder vh)
         {
             if (pool.IsFull())
             {
@@ -428,7 +429,7 @@ namespace RecyclerView
 
 
 
-        protected void ThrowToCache(ViewHolder viewHolder, bool top)
+        private void ThrowToCache(ViewHolder viewHolder, bool top)
         {
             viewHolder.status = Status.CACHE;
             if (top)
@@ -441,7 +442,7 @@ namespace RecyclerView
             }
         }
 
-        protected void RemoveNotVisibleViewHolders()
+        private void RemoveNotVisibleViewHolders()
         {
             attachedScrap.AddRange(cacheTop);
             attachedScrap.AddRange(cacheBot);
@@ -479,7 +480,7 @@ namespace RecyclerView
             }
         }
 
-        protected void RemoveViewHoldersFromCache(bool top)
+        private void RemoveViewHoldersFromCache(bool top)
         {
             if (top)
             {
@@ -507,7 +508,7 @@ namespace RecyclerView
             }
         }
 
-        protected void Sort(List<ViewHolder> list, bool upperFirst)
+        private void Sort(List<ViewHolder> list, bool upperFirst)
         {
             for (int i = 0; i < list.Count; i++)
             {
@@ -534,7 +535,7 @@ namespace RecyclerView
                 }
             }
         }
-        protected int GetLowerPosition(List<ViewHolder> list)
+        private int GetLowerPosition(List<ViewHolder> list)
         {
             int lower = int.MaxValue;
             foreach (ViewHolder scrap in list)
@@ -547,7 +548,7 @@ namespace RecyclerView
             return lower != int.MaxValue ? lower : -1;
         }
 
-        protected int GetUpperPosition(List<ViewHolder> list)
+        private int GetUpperPosition(List<ViewHolder> list)
         {
             int upper = -1;
             foreach (ViewHolder scrap in list)
@@ -559,7 +560,7 @@ namespace RecyclerView
             }
             return upper;
         }
-        protected void Clear()
+        private void Clear()
         {
             foreach (Transform row in Grid.transform)
             {
@@ -577,7 +578,7 @@ namespace RecyclerView
         private IEnumerator INotifyDatasetChanged(int pos = 0)
         {
             ScrollRect.inertia = false;
-            NotifyDatasetChanged(pos);
+            OnDataChange(pos);
             yield return new WaitForEndOfFrame();
             OnScroll();
             ScrollRect.inertia = true;
@@ -619,6 +620,53 @@ namespace RecyclerView
         public void SmothScrollTo(int position)
         {
             StartCoroutine(IScrollTo(new Vector2(0, ((rowHeight + spacingY) * position) / LIMIT_BOTTOM )));
+        }
+
+        protected void OnDataChange(int pos = 0)
+        {
+            if (pos < 0 || pos > GetItemCount())
+            {
+                return;
+            }
+
+
+            Clear();
+
+            pool = new Pool(POOL_SIZE, CACHE_SIZE);
+
+            if (GetItemCount() > 0)
+            {
+                ViewHolder vh = (T)Activator.CreateInstance(typeof(T), new object[] { OnCreateViewHolder(transform) });
+                vh.current_index = pos;
+                vh.last_index = pos;
+                vh.status = Status.SCRAP;
+                AddToAttachedScrap(vh, true);
+                OnBindViewHolder((T)Convert.ChangeType(vh, typeof(T)), pos);
+
+                rowHeight = vh.rectTransform.rect.height;
+                LIMIT_BOTTOM = ((GetItemCount() * (rowHeight + spacingY)) - SelfRectTransform.rect.height) - spacingY;
+                GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, (rowHeight + spacingY) * pos);
+                GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
+                int ATTACHED_SCRAP_SIZE = Mathf.FloorToInt(SelfRectTransform.rect.height / (rowHeight / 2)); //TODO calcular
+                Debug.Log(ATTACHED_SCRAP_SIZE);
+                for (int i = pos + 1; i < ATTACHED_SCRAP_SIZE + pos; i++)
+                {
+                    if (i < GetItemCount())
+                    {
+                        ViewHolder vh2 = (T)Activator.CreateInstance(typeof(T), new object[] { OnCreateViewHolder(transform) });
+                        vh2.current_index = i;
+                        vh2.last_index = i;
+                        vh2.status = Status.SCRAP;
+                        AddToAttachedScrap(vh2, true);
+                        OnBindViewHolder((T)Convert.ChangeType(vh2, typeof(T)), i);
+                    }
+                }
+
+
+
+
+                ReorderList();
+            }
         }
 
         public class Pool

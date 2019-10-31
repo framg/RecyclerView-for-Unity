@@ -325,7 +325,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   spacingY: 0
-  LIMIT_BOTTOM: 0
   list: []
 --- !u!114 &407431876
 MonoBehaviour:
@@ -545,7 +544,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &2079169602
 RectTransform:
   m_ObjectHideFlags: 0
@@ -657,7 +656,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   spacingY: 80
-  LIMIT_BOTTOM: 0
   list: []
 --- !u!114 &2079169608
 MonoBehaviour:

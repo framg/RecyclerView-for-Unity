@@ -113,67 +113,7 @@ public class ExampleAdapter : RecyclerView.Adapter<ExampleAdapter.ViewHolder>
     bool isRectInsideAnotherRect(){
         return false;
     }
-bool rectOverlaps(RectTransform rectTrans1, RectTransform rectTrans2)
-{
-    Rect rect1 = new Rect(rectTrans1.localPosition.x, rectTrans1.localPosition.y, rectTrans1.rect.width, rectTrans1.rect.height);
-    Rect rect2 = new Rect(rectTrans2.localPosition.x, rectTrans2.localPosition.y, rectTrans2.rect.width, rectTrans2.rect.height);
 
-    return rect1.Overlaps(rect2);
-}
-  //if your viewport is screen, then keep it as 'null'
-    // NOTICE - doesn't consider if the rectangles are rotating,
-    //
-    // but shoudl work even if canvas's camera ISN'T aligned with world axis :)
-    public static bool is_rectTransformsOverlap( Camera cam,
-                                                 RectTransform elem,
-                                                 RectTransform viewport = null ){
-        Vector2 viewportMinCorner;
-        Vector2 viewportMaxCorner;
- 
-        if(viewport != null) {
-            //so that we don't have to traverse the entire parent hierarchy (just to get screen coords relative to screen),
-            //ask the camera to do it for us.
-            //first get world corners of our rect:
-            Vector3[] v_wcorners = new Vector3[4];
-            viewport.GetWorldCorners(v_wcorners); //bot left, top left, top right, bot right
- 
-            //+ow shove it back into screen space. Now the rect is relative to the bottom left corner of screen:
-            viewportMinCorner = cam.WorldToScreenPoint(v_wcorners[0]);
-            viewportMaxCorner = cam.WorldToScreenPoint(v_wcorners[2]);
-        }
-        else {
-            //just use the scren as the viewport
-            viewportMinCorner = new Vector2( 0, 0 );
-            viewportMaxCorner = new Vector2( Screen.width, Screen.height);
-        }
- 
-        //give 1 pixel border to avoid numeric issues:
-        viewportMinCorner += Vector2.one;
-        viewportMaxCorner -= Vector2.one;
- 
-        //do a similar procedure, to get the "element's" corners relative to screen:
-        Vector3[] e_wcorners = new Vector3[4];
-        elem.GetWorldCorners(e_wcorners);
- 
-        Vector2 elem_minCorner = cam.WorldToScreenPoint(e_wcorners[0]);
-        Vector2 elem_maxCorner = cam.WorldToScreenPoint(e_wcorners[2]);
- 
-        //perform comparison:
-        if(elem_minCorner.x > viewportMaxCorner.x) { return false; }//completelly outside (to the right)
-        if(elem_minCorner.y > viewportMaxCorner.y) { return false; }//completelly outside (is above)
- 
-        if(elem_maxCorner.x < viewportMinCorner.x) {  return false;  }//completelly outside (to the left)
-        if(elem_maxCorner.y < viewportMinCorner.y) {  return false;  }//completelly outside (is below)
- 
-        /*
-             commented out, but use it if need to check if element is completely inside:
-            Vector2 minDif = viewportMinCorner - elem_minCorner;
-            Vector2 maxDif = viewportMaxCorner - elem_maxCorner;
-            if(minDif.x < 0  &&  minDif.y < 0  &&  maxDif.x > 0  &&maxDif.y > 0) { //return "is completely inside" }
-        */
-     
-        return true;//passed all checks, is inside (at least partially)
-    }
  
 
 }
