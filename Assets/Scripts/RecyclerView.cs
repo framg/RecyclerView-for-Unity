@@ -10,9 +10,13 @@ namespace RecyclerView
     public abstract class RecyclerView<T> : MonoBehaviour, IAdapter<T>, IRecyclerView
         where T : ViewHolder
     {
-        public float spacingY;
-        private float rowHeight;
 
+        public Orientation orientation;
+        public Vector2 Spacing;
+        public bool IsReverse;
+        //  public float spacingY;
+        // private float rowHeight;
+        private Vector2 RowDimension;
         private ScrollRect ScrollRect;
         private RectTransform SelfRectTransform { get; set; }
         private RectTransform GridRectTransform { get; set; }
@@ -20,7 +24,7 @@ namespace RecyclerView
         private int POOL_SIZE = 10;
         private int CACHE_SIZE = 3;
         private float LIMIT_BOTTOM = 0;
-
+      
         private bool isDraging, isClickDown;
 
         private Pool pool;
@@ -40,33 +44,62 @@ namespace RecyclerView
             {
                 Destroy(child.gameObject);
             }
+            Create();
+
+            OnDataChange();
+        }
+
+        private void Create()
+        {
 
             SelfRectTransform = GetComponent<RectTransform>();
             Grid = new GameObject();
             Grid.name = "Grid";
             GridRectTransform = Grid.AddComponent<RectTransform>();
             GridRectTransform.sizeDelta = Vector2.zero;
-            GridRectTransform.anchorMax = new Vector2(0.5f, 1f);
-            GridRectTransform.anchorMin = new Vector2(0.5f, 1f);
-            GridRectTransform.pivot = new Vector2(0.5f, 1f);
+
+            if (IsVerticalOrientation())
+            {
+                GridRectTransform.anchorMax = new Vector2(0.5f, 1f);
+                GridRectTransform.anchorMin = new Vector2(0.5f, 1f);
+                GridRectTransform.pivot = new Vector2(0.5f, 1f);
+            }
+            else
+            {
+                if (IsReverse)
+                {
+                    GridRectTransform.anchorMax = new Vector2(1f, 0.5f);
+                    GridRectTransform.anchorMin = new Vector2(1f, 0.5f);
+                    GridRectTransform.pivot = new Vector2(1f, 0.5f);
+                }
+                else
+                {
+                    GridRectTransform.anchorMax = new Vector2(0f, 0.5f);
+                    GridRectTransform.anchorMin = new Vector2(0f, 0.5f);
+                    GridRectTransform.pivot = new Vector2(0f, 0.5f);
+                }
+            }
+
             Grid.transform.SetParent(transform);
             GridRectTransform.anchoredPosition = Vector3.zero;
+
 
             ScrollRect = GetComponent<ScrollRect>();
             if (ScrollRect == null)
             {
                 ScrollRect = gameObject.AddComponent<ScrollRect>();
-            }
+            }       
             ScrollRect.content = GridRectTransform;
             ScrollRect.onValueChanged.AddListener(delegate { OnScroll(); });
-            ScrollRect.vertical = true;
-            ScrollRect.horizontal = false;
             ScrollRect.viewport = SelfRectTransform;
             ScrollRect.content = GridRectTransform;
             ScrollRect.movementType = ScrollRect.MovementType.Unrestricted;
             ScrollRect.inertia = true;
             ScrollRect.decelerationRate = 0.5f;
             ScrollRect.scrollSensitivity = 10f;
+            ScrollRect.vertical = IsVerticalOrientation();
+            ScrollRect.horizontal = !IsVerticalOrientation();
+
             if (GetComponent<Image>() == null)
             {
                 Image image = gameObject.AddComponent<Image>();
@@ -95,8 +128,6 @@ namespace RecyclerView
                 drag.callback.AddListener((data) => { OnDrag(); });
                 eventTrigger.triggers.Add(drag);
             }
-
-            OnDataChange();
         }
 
         private ViewHolder GetViewHolderFromScrap(int position)
@@ -123,11 +154,29 @@ namespace RecyclerView
                 vh.itemView.transform.SetAsFirstSibling();
             }
             vh.itemView.name = vh.current_index.ToString();
-            vh.rectTransform.pivot = new Vector2(0.5f, 1f);
+            if (IsVerticalOrientation())
+            {
+                vh.rectTransform.pivot = new Vector2(0.5f, 1f);
+            }
+            else
+            {
+                if (IsReverse)
+                {
+                    vh.rectTransform.pivot = new Vector2(1f, 0.5f);
+                }
+                else
+                {
+                    vh.rectTransform.pivot = new Vector2(0f, 0.5f);
+                }
+            }
             vh.itemView.SetActive(true);
             attachedScrap.Add(vh);
         }
 
+        private bool IsVerticalOrientation()
+        {
+            return orientation == Orientation.VERTICAL;
+        }
 
         private void ReorderList()
         {
@@ -139,7 +188,21 @@ namespace RecyclerView
             {
                 if (vh.status != Status.RECYCLED)
                 {
-                    vh.rectTransform.localPosition = new Vector3(0, (-vh.current_index * (rowHeight + spacingY)), 0);
+                    if (IsVerticalOrientation())
+                    {
+                        vh.rectTransform.localPosition = new Vector3(0, (-vh.current_index * (RowDimension.y + Spacing.y)), 0);
+                    }
+                    else
+                    {
+                        if (IsReverse)
+                        {
+                            vh.rectTransform.localPosition = new Vector3((-vh.current_index * (RowDimension.x + Spacing.x)), 0, 0);
+                        }
+                        else
+                        {
+                            vh.rectTransform.localPosition = new Vector3((vh.current_index * (RowDimension.x + Spacing.x)), 0, 0);
+                        }
+                    }
                 }
             }
 
@@ -288,24 +351,61 @@ namespace RecyclerView
 
         private void ClampList()
         {
-            if (GridRectTransform.offsetMax.y < 0)
+            if (IsVerticalOrientation())
             {
-                GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, 0);
-                GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
+                if (GridRectTransform.offsetMax.y < 0)
+                {
+                    GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, 0);
+                    GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
+                }
+                else if (GridRectTransform.offsetMax.y > LIMIT_BOTTOM)
+                {
+                    GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, LIMIT_BOTTOM);
+                    GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
+                }
             }
-            else if (GridRectTransform.offsetMax.y > LIMIT_BOTTOM)
+            else
             {
-                GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, LIMIT_BOTTOM);
-                GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
+                
+                if (IsReverse)
+                {
+                    if (GridRectTransform.offsetMax.x < 0)
+                    {
+                        GridRectTransform.offsetMax = new Vector2(0, GridRectTransform.offsetMax.y);
+                        GridRectTransform.sizeDelta = new Vector2(0, GridRectTransform.sizeDelta.y);
+                    }
+                    else if (GridRectTransform.offsetMax.x > LIMIT_BOTTOM)
+                    {
+                        GridRectTransform.offsetMax = new Vector2(LIMIT_BOTTOM, GridRectTransform.offsetMax.y);
+                        GridRectTransform.sizeDelta = new Vector2(0, GridRectTransform.sizeDelta.y);
+                    }
+                }
+                else
+                {
+                    //Debug.Log(GridRectTransform.offsetMax.ToString() + " AND " + GridRectTransform.sizeDelta.ToString());
+                    if (GridRectTransform.offsetMax.x > 0)
+                    {
+                       //Debug.Log(GridRectTransform.localPosition);
+                        GridRectTransform.localPosition = new Vector2(0, GridRectTransform.localPosition.y);
+                        GridRectTransform.offsetMax = new Vector2(0, GridRectTransform.offsetMax.y);
+                        GridRectTransform.sizeDelta = new Vector2(0, GridRectTransform.sizeDelta.y);
+                    }
+                    else if (GridRectTransform.offsetMax.x < -LIMIT_BOTTOM)
+                    {
+                        GridRectTransform.localPosition = new Vector2(-LIMIT_BOTTOM, GridRectTransform.localPosition.y);
+                        GridRectTransform.offsetMax = new Vector2(-LIMIT_BOTTOM, GridRectTransform.offsetMax.y);
+                        GridRectTransform.sizeDelta = new Vector2(0, GridRectTransform.sizeDelta.y);
+                    }
+                }
             }
         }
 
 
         private void Snap()
         {
-            int pos = Mathf.FloorToInt(GridRectTransform.offsetMax.y / (rowHeight + spacingY));
-            GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, (rowHeight + spacingY) * pos);
-            GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
+          //  int pos = Mathf.FloorToInt(GridRectTransform.offsetMax.y / (rowHeight + spacingY));
+       //     GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, (rowHeight + spacingY) * pos);
+          //  GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
         }
 
 
@@ -327,20 +427,68 @@ namespace RecyclerView
 
         private void OnScroll()
         {
-
-            ClampList();
-            RemoveNotVisibleViewHolders();
-            RemoveViewHoldersFromCache(true);
-            RemoveViewHoldersFromCache(false);
-            AddNewViewHoldersToCache(true);
-            AddNewViewHoldersToCache(false);
-            ReorderList();
+            if (IsStateValid())
+            {
+                ClampList();
+                RemoveNotVisibleViewHolders();
+                RemoveViewHoldersFromCache(true);
+                RemoveViewHoldersFromCache(false);
+                AddNewViewHoldersToCache(true);
+                AddNewViewHoldersToCache(false);
+                ReorderList();
+            }
+            else
+            {
+                Invalidate();
+            }
 
             //if (Mathf.Abs(ScrollRect.velocity.y) < 100 && !isDraging)
             //{
             //    Snap();
             //}
             // Debug.Log(ScrollRect.velocity);
+        }
+
+        private void Invalidate()
+        {
+            Debug.Log("INVALIDATE");
+            if (IsVerticalOrientation())
+            {
+
+            }
+            else
+            {
+                if (IsReverse)
+                {
+
+                }
+                else
+                {
+                    if (GridRectTransform.offsetMax.x < -LIMIT_BOTTOM)
+                    {
+                        ScrollTo(GetItemCount() - 1);
+                    }
+                    else
+                    {
+                        ScrollTo(0);
+                    }
+                }
+            }
+           // Debug.Log("MODEL IS INVALID");
+          //  Debug.Log(GridRectTransform.offsetMax);
+        }
+
+        private bool IsStateValid()
+        {
+            foreach(ViewHolder vh in attachedScrap)
+            {
+                if (!vh.IsHidden())
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
 
@@ -384,7 +532,21 @@ namespace RecyclerView
                         vh.itemView.transform.SetParent(Grid.transform);
                         vh.itemView.transform.SetAsLastSibling();
                         vh.itemView.name = vh.current_index.ToString();
-                        vh.rectTransform.pivot = new Vector2(0.5f, 1f);
+                        if (IsVerticalOrientation())
+                        {
+                            vh.rectTransform.pivot = new Vector2(0.5f, 1f);
+                        }
+                        else
+                        {
+                            if (IsReverse)
+                            {
+                                vh.rectTransform.pivot = new Vector2(1f, 0.5f);
+                            }
+                            else
+                            {
+                                vh.rectTransform.pivot = new Vector2(0f, 0.5f);
+                            }
+                        }
                         vh.itemView.SetActive(true);
 
                         ThrowToCache(vh, true);
@@ -403,7 +565,21 @@ namespace RecyclerView
                         vh.itemView.transform.SetParent(Grid.transform);
                         vh.itemView.transform.SetAsFirstSibling();
                         vh.itemView.name = vh.current_index.ToString();
-                        vh.rectTransform.pivot = new Vector2(0.5f, 1f);
+                        if (IsVerticalOrientation())
+                        {
+                            vh.rectTransform.pivot = new Vector2(0.5f, 1f);
+                        }
+                        else
+                        {
+                            if (IsReverse)
+                            {
+                                vh.rectTransform.pivot = new Vector2(1f, 0.5f);
+                            }
+                            else
+                            {
+                                vh.rectTransform.pivot = new Vector2(0f, 0.5f);
+                            }
+                        }
                         vh.itemView.SetActive(true);
                         ThrowToCache(vh, false);
                         OnBindViewHolder((T)Convert.ChangeType(vh, typeof(T)), vh.current_index);
@@ -421,7 +597,21 @@ namespace RecyclerView
             else
             {
                 vh.status = Status.RECYCLED;
-                vh.rectTransform.pivot = new Vector2(0.5f, 1f);
+                if (IsVerticalOrientation())
+                {
+                    vh.rectTransform.pivot = new Vector2(0.5f, 1f);
+                }
+                else
+                {
+                    if (IsReverse)
+                    {
+                        vh.rectTransform.pivot = new Vector2(1f, 0.5f);
+                    }
+                    else
+                    {
+                        vh.rectTransform.pivot = new Vector2(0f, 0.5f);
+                    }
+                }
                 vh.itemView.SetActive(false);
                 pool.Add(vh);
             }
@@ -577,6 +767,16 @@ namespace RecyclerView
 
         private IEnumerator INotifyDatasetChanged(int pos = 0)
         {
+            //float size;
+            //if (IsVerticalOrientation())
+            //{
+            //    size = ((RowDimension.y + Spacing.y) * pos);
+            //}
+            //else
+            //{
+            //    size = ((RowDimension.x + Spacing.x) * pos);
+            //}
+
             ScrollRect.inertia = false;
             OnDataChange(pos);
             yield return new WaitForEndOfFrame();
@@ -586,6 +786,8 @@ namespace RecyclerView
 
         private IEnumerator IScrollTo(Vector2 dir, float speed = 100)
         {
+           // Debug.Log(dir + " " +speed);
+
             Vector2 v = new Vector2(0, dir.y * LIMIT_BOTTOM);
             ScrollRect.inertia = false;
             bool goUp = GridRectTransform.offsetMax.y > v.y;
@@ -598,6 +800,17 @@ namespace RecyclerView
                 }
 
                 y += goUp ? -speed : speed;
+                
+                if(y > LIMIT_BOTTOM)
+                {
+                  //  break;
+                    y = LIMIT_BOTTOM;
+                    GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, y);
+                    GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
+                    OnScroll();
+                    break;
+                }
+
                 GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, y);
                 GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
                 OnScroll();
@@ -615,11 +828,19 @@ namespace RecyclerView
         public void ScrollTo(int position)
         {
             StartCoroutine(INotifyDatasetChanged(position));
+
         }
 
         public void SmothScrollTo(int position)
         {
-            StartCoroutine(IScrollTo(new Vector2(0, ((rowHeight + spacingY) * position) / LIMIT_BOTTOM )));
+            if (IsVerticalOrientation())
+            {
+                StartCoroutine(IScrollTo(new Vector2(0, ((RowDimension.y + Spacing.y) * position) / LIMIT_BOTTOM)));
+            }
+            else
+            {
+                //TODO
+            }
         }
 
         protected void OnDataChange(int pos = 0)
@@ -628,6 +849,7 @@ namespace RecyclerView
             {
                 return;
             }
+         //   Debug.Log("HEY");
 
 
             Clear();
@@ -636,19 +858,42 @@ namespace RecyclerView
 
             if (GetItemCount() > 0)
             {
+                int ATTACHED_SCRAP_SIZE = 0;
                 ViewHolder vh = (T)Activator.CreateInstance(typeof(T), new object[] { OnCreateViewHolder(transform) });
                 vh.current_index = pos;
                 vh.last_index = pos;
                 vh.status = Status.SCRAP;
                 AddToAttachedScrap(vh, true);
                 OnBindViewHolder((T)Convert.ChangeType(vh, typeof(T)), pos);
+                RowDimension = new Vector2(vh.rectTransform.rect.width, vh.rectTransform.rect.height);
 
-                rowHeight = vh.rectTransform.rect.height;
-                LIMIT_BOTTOM = ((GetItemCount() * (rowHeight + spacingY)) - SelfRectTransform.rect.height) - spacingY;
-                GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, (rowHeight + spacingY) * pos);
-                GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
-                int ATTACHED_SCRAP_SIZE = Mathf.FloorToInt(SelfRectTransform.rect.height / (rowHeight / 2)); //TODO calcular
-                Debug.Log(ATTACHED_SCRAP_SIZE);
+                if (IsVerticalOrientation())
+                {                  
+                    LIMIT_BOTTOM = ((GetItemCount() * (RowDimension.y + Spacing.y)) - SelfRectTransform.rect.height) - Spacing.y;
+
+                    GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, (RowDimension.y + Spacing.y) * pos);
+                    GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
+
+                    ATTACHED_SCRAP_SIZE = Mathf.FloorToInt(SelfRectTransform.rect.height / (RowDimension.y / 2)); //TODO calcular
+                }
+                else
+                {
+                    LIMIT_BOTTOM = ((GetItemCount() * (RowDimension.x + Spacing.x)) - SelfRectTransform.rect.width) - Spacing.x;
+                    if (IsReverse)
+                    {
+                        GridRectTransform.offsetMax = new Vector2((RowDimension.x + Spacing.x) * pos, GridRectTransform.offsetMax.y);
+                        GridRectTransform.sizeDelta = new Vector2(0, GridRectTransform.sizeDelta.y);
+                    }
+                    else
+                    {
+                        GridRectTransform.localPosition = new Vector2(-(RowDimension.x + Spacing.x) * pos, GridRectTransform.localPosition.y);
+                        GridRectTransform.offsetMax = new Vector2(-(RowDimension.x + Spacing.x) * pos, GridRectTransform.offsetMax.y);
+                        GridRectTransform.sizeDelta = new Vector2(0, GridRectTransform.sizeDelta.y);
+                    }
+                    ATTACHED_SCRAP_SIZE = Mathf.FloorToInt(SelfRectTransform.rect.width / (RowDimension.x / 2)); //TODO calcular
+                }
+
+               
                 for (int i = pos + 1; i < ATTACHED_SCRAP_SIZE + pos; i++)
                 {
                     if (i < GetItemCount())
@@ -662,11 +907,17 @@ namespace RecyclerView
                     }
                 }
 
+               // OnScroll();
 
-
-
+        
                 ReorderList();
             }
+        }
+
+        public enum Orientation
+        {
+            VERTICAL,
+            HORIZONTAL
         }
 
         public class Pool

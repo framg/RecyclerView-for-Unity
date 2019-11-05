@@ -324,7 +324,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5fe7c93dd584a941b33329b409c4f22, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spacingY: 0
+  orientation: 0
+  Spacing: {x: 0, y: 0}
+  IsReverse: 0
   list: []
 --- !u!114 &407431876
 MonoBehaviour:
@@ -655,7 +657,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5fe7c93dd584a941b33329b409c4f22, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spacingY: 80
+  orientation: 0
+  Spacing: {x: 60, y: 60}
+  IsReverse: 0
   list: []
 --- !u!114 &2079169608
 MonoBehaviour:
