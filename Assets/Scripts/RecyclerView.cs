@@ -23,8 +23,8 @@ namespace RecyclerView
         private GameObject Grid;
         private int POOL_SIZE = 10;
         private int CACHE_SIZE = 3;
-        private float LIMIT_BOTTOM = 0;
-      
+        public float LIMIT_BOTTOM = 0;
+        private bool IsCreating = false;
         private bool isDraging, isClickDown;
 
         private Pool pool;
@@ -60,9 +60,19 @@ namespace RecyclerView
 
             if (IsVerticalOrientation())
             {
-                GridRectTransform.anchorMax = new Vector2(0.5f, 1f);
-                GridRectTransform.anchorMin = new Vector2(0.5f, 1f);
-                GridRectTransform.pivot = new Vector2(0.5f, 1f);
+                if (IsReverse)
+                {
+                    GridRectTransform.anchorMax = new Vector2(0.5f, 0f);
+                    GridRectTransform.anchorMin = new Vector2(0.5f, 0f);
+                    GridRectTransform.pivot = new Vector2(0.5f, 0f);
+                }
+                else
+                {
+                    GridRectTransform.anchorMax = new Vector2(0.5f, 1f);
+                    GridRectTransform.anchorMin = new Vector2(0.5f, 1f);
+                    GridRectTransform.pivot = new Vector2(0.5f, 1f);
+                }
+
             }
             else
             {
@@ -156,7 +166,15 @@ namespace RecyclerView
             vh.itemView.name = vh.current_index.ToString();
             if (IsVerticalOrientation())
             {
-                vh.rectTransform.pivot = new Vector2(0.5f, 1f);
+                if (IsReverse)
+                {
+                    vh.rectTransform.pivot = new Vector2(0.5f, 0f);
+                }
+                else
+                {
+                    vh.rectTransform.pivot = new Vector2(0.5f, 1f);
+                }
+
             }
             else
             {
@@ -190,7 +208,14 @@ namespace RecyclerView
                 {
                     if (IsVerticalOrientation())
                     {
-                        vh.rectTransform.localPosition = new Vector3(0, (-vh.current_index * (RowDimension.y + Spacing.y)), 0);
+                        if (IsReverse)
+                        {
+                            vh.rectTransform.localPosition = new Vector3(0, (vh.current_index * (RowDimension.y + Spacing.y)), 0);
+                        }
+                        else
+                        {
+                            vh.rectTransform.localPosition = new Vector3(0, (-vh.current_index * (RowDimension.y + Spacing.y)), 0);
+                        }
                     }
                     else
                     {
@@ -353,16 +378,36 @@ namespace RecyclerView
         {
             if (IsVerticalOrientation())
             {
-                if (GridRectTransform.offsetMax.y < 0)
+                if (IsReverse)
                 {
-                    GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, 0);
-                    GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
+                    if (GridRectTransform.offsetMax.y > 0)
+                    {
+                        GridRectTransform.localPosition = new Vector2(GridRectTransform.localPosition.x, 0);
+                        GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, 0);
+                        GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
+                    }
+                    else if (GridRectTransform.offsetMax.y < -LIMIT_BOTTOM)
+                    {
+                      //  GridRectTransform.localPosition = new Vector2(GridRectTransform.offsetMax.x, -LIMIT_BOTTOM);
+                        GridRectTransform.localPosition = new Vector2(GridRectTransform.localPosition.x, -LIMIT_BOTTOM);
+                        GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, -LIMIT_BOTTOM);
+                        GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
+                    }
                 }
-                else if (GridRectTransform.offsetMax.y > LIMIT_BOTTOM)
+                else
                 {
-                    GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, LIMIT_BOTTOM);
-                    GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
+                    if (GridRectTransform.offsetMax.y < 0)
+                    {
+                        GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, 0);
+                        GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
+                    }
+                    else if (GridRectTransform.offsetMax.y > LIMIT_BOTTOM)
+                    {
+                        GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, LIMIT_BOTTOM);
+                        GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
+                    }
                 }
+
             }
             else
             {
@@ -427,40 +472,71 @@ namespace RecyclerView
 
         private void OnScroll()
         {
-            if (IsStateValid())
+            if (!IsCreating)
             {
-                ClampList();
-                RemoveNotVisibleViewHolders();
-                RemoveViewHoldersFromCache(true);
-                RemoveViewHoldersFromCache(false);
-                AddNewViewHoldersToCache(true);
-                AddNewViewHoldersToCache(false);
-                ReorderList();
-            }
-            else
-            {
-                Invalidate();
-            }
+                if (IsStateValid())
+                {
+                    ClampList();
+                    RemoveNotVisibleViewHolders();
+                    RemoveViewHoldersFromCache(true);
+                    RemoveViewHoldersFromCache(false);
+                    AddNewViewHoldersToCache(true);
+                    AddNewViewHoldersToCache(false);
+                    ReorderList();
+                }
+                else
+                {
+                    Invalidate();
+                }
 
-            //if (Mathf.Abs(ScrollRect.velocity.y) < 100 && !isDraging)
-            //{
-            //    Snap();
-            //}
-            // Debug.Log(ScrollRect.velocity);
+                //if (Mathf.Abs(ScrollRect.velocity.y) < 100 && !isDraging)
+                //{
+                //    Snap();
+                //}
+                // Debug.Log(ScrollRect.velocity);
+            }
         }
 
         private void Invalidate()
         {
-            Debug.Log("INVALIDATE");
+           
             if (IsVerticalOrientation())
             {
-
+                if (IsReverse)
+                {
+                    if (GridRectTransform.offsetMax.y < -LIMIT_BOTTOM)
+                    {
+                        ScrollTo(GetItemCount() - 1);
+                    }
+                    else
+                    {
+                        ScrollTo(0);
+                    }
+                }
+                else
+                {
+                    if (GridRectTransform.offsetMax.y > LIMIT_BOTTOM)
+                    {
+                        ScrollTo(GetItemCount() - 1);
+                    }
+                    else
+                    {
+                        ScrollTo(0);
+                    }
+                }
             }
             else
             {
                 if (IsReverse)
                 {
-
+                    if (GridRectTransform.offsetMax.x > LIMIT_BOTTOM)
+                    {
+                        ScrollTo(GetItemCount() - 1);
+                    }
+                    else
+                    {
+                        ScrollTo(0);
+                    }
                 }
                 else
                 {
@@ -526,7 +602,7 @@ namespace RecyclerView
                 int nTop = CACHE_SIZE - cacheTop.Count;
                 for (int i = 0; i < nTop; i++)
                 {
-                    ViewHolder vh = TryGetViewHolderForPosition(GetUpperPosition(cacheTop.Count > 0 ? cacheTop : attachedScrap) + 1);
+                    ViewHolder vh = TryGetViewHolderForPosition(Utils.GetUpperPosition(cacheTop.Count > 0 ? cacheTop : attachedScrap) + 1);
                     if (vh != null)
                     {
                         vh.itemView.transform.SetParent(Grid.transform);
@@ -534,7 +610,14 @@ namespace RecyclerView
                         vh.itemView.name = vh.current_index.ToString();
                         if (IsVerticalOrientation())
                         {
-                            vh.rectTransform.pivot = new Vector2(0.5f, 1f);
+                            if (IsReverse)
+                            {
+                                vh.rectTransform.pivot = new Vector2(0.5f, 0f);
+                            }
+                            else
+                            {
+                                vh.rectTransform.pivot = new Vector2(0.5f, 1f);
+                            }
                         }
                         else
                         {
@@ -559,7 +642,7 @@ namespace RecyclerView
                 int nBot = CACHE_SIZE - cacheBot.Count;
                 for (int i = 0; i < nBot; i++)
                 {
-                    ViewHolder vh = TryGetViewHolderForPosition(GetLowerPosition(cacheBot.Count > 0 ? cacheBot : attachedScrap) - 1);
+                    ViewHolder vh = TryGetViewHolderForPosition(Utils.GetLowerPosition(cacheBot.Count > 0 ? cacheBot : attachedScrap) - 1);
                     if (vh != null)
                     {
                         vh.itemView.transform.SetParent(Grid.transform);
@@ -567,7 +650,14 @@ namespace RecyclerView
                         vh.itemView.name = vh.current_index.ToString();
                         if (IsVerticalOrientation())
                         {
-                            vh.rectTransform.pivot = new Vector2(0.5f, 1f);
+                            if (IsReverse)
+                            {
+                                vh.rectTransform.pivot = new Vector2(0.5f, 0f);
+                            }
+                            else
+                            {
+                                vh.rectTransform.pivot = new Vector2(0.5f, 1f);
+                            }
                         }
                         else
                         {
@@ -597,21 +687,22 @@ namespace RecyclerView
             else
             {
                 vh.status = Status.RECYCLED;
-                if (IsVerticalOrientation())
-                {
-                    vh.rectTransform.pivot = new Vector2(0.5f, 1f);
-                }
-                else
-                {
-                    if (IsReverse)
-                    {
-                        vh.rectTransform.pivot = new Vector2(1f, 0.5f);
-                    }
-                    else
-                    {
-                        vh.rectTransform.pivot = new Vector2(0f, 0.5f);
-                    }
-                }
+                //if (IsVerticalOrientation())
+                //{
+
+                //    vh.rectTransform.pivot = new Vector2(0.5f, 1f);
+                //}
+                //else
+                //{
+                //    if (IsReverse)
+                //    {
+                //        vh.rectTransform.pivot = new Vector2(1f, 0.5f);
+                //    }
+                //    else
+                //    {
+                //        vh.rectTransform.pivot = new Vector2(0f, 0.5f);
+                //    }
+                //}
                 vh.itemView.SetActive(false);
                 pool.Add(vh);
             }
@@ -639,7 +730,7 @@ namespace RecyclerView
             cacheTop.Clear();
             cacheBot.Clear();
 
-            Sort(attachedScrap, true);
+            Utils.Sort(attachedScrap, true);
 
             for (int i = attachedScrap.Count - 1; i >= 0; i--)
             {
@@ -654,7 +745,7 @@ namespace RecyclerView
                 }
             }
 
-            Sort(attachedScrap, false);
+            Utils.Sort(attachedScrap, false);
 
             for (int i = attachedScrap.Count - 1; i >= 0; i--)
             {
@@ -674,7 +765,7 @@ namespace RecyclerView
         {
             if (top)
             {
-                Sort(cacheTop, true);
+                Utils.Sort(cacheTop, true);
                 if (cacheTop.Count > CACHE_SIZE)
                 {
                     for (int i = cacheTop.Count - 1; i >= CACHE_SIZE; i--)
@@ -686,7 +777,7 @@ namespace RecyclerView
             }
             else
             {
-                Sort(cacheBot, false);
+                Utils.Sort(cacheBot, false);
                 if (cacheBot.Count > CACHE_SIZE)
                 {
                     for (int i = cacheBot.Count - 1; i >= CACHE_SIZE; i--)
@@ -698,58 +789,6 @@ namespace RecyclerView
             }
         }
 
-        private void Sort(List<ViewHolder> list, bool upperFirst)
-        {
-            for (int i = 0; i < list.Count; i++)
-            {
-                for (int j = i + 1; j < list.Count; j++)
-                {
-                    if (upperFirst)
-                    {
-                        if (list[i].current_index > list[j].current_index)
-                        {
-                            ViewHolder aux = list[i];
-                            list[i] = list[j];
-                            list[j] = aux;
-                        }
-                    }
-                    else
-                    {
-                        if (list[i].current_index < list[j].current_index)
-                        {
-                            ViewHolder aux = list[i];
-                            list[i] = list[j];
-                            list[j] = aux;
-                        }
-                    }
-                }
-            }
-        }
-        private int GetLowerPosition(List<ViewHolder> list)
-        {
-            int lower = int.MaxValue;
-            foreach (ViewHolder scrap in list)
-            {
-                if (scrap.current_index < lower)
-                {
-                    lower = scrap.current_index;
-                }
-            }
-            return lower != int.MaxValue ? lower : -1;
-        }
-
-        private int GetUpperPosition(List<ViewHolder> list)
-        {
-            int upper = -1;
-            foreach (ViewHolder scrap in list)
-            {
-                if (scrap.current_index > upper)
-                {
-                    upper = scrap.current_index;
-                }
-            }
-            return upper;
-        }
         private void Clear()
         {
             foreach (Transform row in Grid.transform)
@@ -845,13 +884,14 @@ namespace RecyclerView
 
         protected void OnDataChange(int pos = 0)
         {
+            IsCreating = true;
+
             if (pos < 0 || pos > GetItemCount())
             {
                 return;
             }
-         //   Debug.Log("HEY");
-
-
+            //   Debug.Log("HEY");
+            
             Clear();
 
             pool = new Pool(POOL_SIZE, CACHE_SIZE);
@@ -870,15 +910,27 @@ namespace RecyclerView
                 if (IsVerticalOrientation())
                 {                  
                     LIMIT_BOTTOM = ((GetItemCount() * (RowDimension.y + Spacing.y)) - SelfRectTransform.rect.height) - Spacing.y;
-
-                    GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, (RowDimension.y + Spacing.y) * pos);
-                    GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
-
                     ATTACHED_SCRAP_SIZE = Mathf.FloorToInt(SelfRectTransform.rect.height / (RowDimension.y / 2)); //TODO calcular
+                    if (IsReverse)
+                    {
+                     //   GridRectTransform.localPosition = new Vector2(GridRectTransform.offsetMax.x, -(RowDimension.y + Spacing.y) * pos);
+                        GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, -(RowDimension.y + Spacing.y) * pos);
+                        GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
+                    }
+                    else
+                    {
+                    //    GridRectTransform.localPosition = new Vector2(GridRectTransform.offsetMax.x, (RowDimension.y + Spacing.y) * pos);
+                        GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, (RowDimension.y + Spacing.y) * pos);
+                        GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
+                    }
+                    
                 }
                 else
                 {
                     LIMIT_BOTTOM = ((GetItemCount() * (RowDimension.x + Spacing.x)) - SelfRectTransform.rect.width) - Spacing.x;
+                    ATTACHED_SCRAP_SIZE = Mathf.FloorToInt(SelfRectTransform.rect.width / (RowDimension.x / 2)); //TODO calcular
+
+
                     if (IsReverse)
                     {
                         GridRectTransform.offsetMax = new Vector2((RowDimension.x + Spacing.x) * pos, GridRectTransform.offsetMax.y);
@@ -890,7 +942,7 @@ namespace RecyclerView
                         GridRectTransform.offsetMax = new Vector2(-(RowDimension.x + Spacing.x) * pos, GridRectTransform.offsetMax.y);
                         GridRectTransform.sizeDelta = new Vector2(0, GridRectTransform.sizeDelta.y);
                     }
-                    ATTACHED_SCRAP_SIZE = Mathf.FloorToInt(SelfRectTransform.rect.width / (RowDimension.x / 2)); //TODO calcular
+                   
                 }
 
                
@@ -911,15 +963,13 @@ namespace RecyclerView
 
         
                 ReorderList();
+                ClampList();
             }
+
+            IsCreating = false;
         }
 
-        public enum Orientation
-        {
-            VERTICAL,
-            HORIZONTAL
-        }
-
+     
         public class Pool
         {
             int poolSize, cacheSize;
@@ -981,5 +1031,203 @@ namespace RecyclerView
         }
 
     }
+    public enum Orientation
+    {
+        VERTICAL,
+        HORIZONTAL
+    }
 
+
+
+    //public class LayoutManager
+    //{
+    //    public Orientation orientation;
+    //    public Vector2 Spacing;
+    //    public bool IsReverse;
+    //    //  public float spacingY;
+    //    // private float rowHeight;
+    //    private Vector2 RowDimension;
+    //    private ScrollRect ScrollRect;
+    //    private RectTransform SelfRectTransform { get; set; }
+    //    private RectTransform GridRectTransform { get; set; }
+    //    private GameObject Grid;
+    //    private int POOL_SIZE = 10;
+    //    private int CACHE_SIZE = 3;
+    //    public float LIMIT_BOTTOM = 0;
+    //    private bool IsCreating = false;
+    //    private bool isDraging, isClickDown;
+
+    //    private void ReorderList()
+    //    {
+    //        List<ViewHolder> vhs = new List<ViewHolder>();
+    //        vhs.AddRange(cacheBot);
+    //        vhs.AddRange(cacheTop);
+    //        vhs.AddRange(attachedScrap);
+    //        foreach (ViewHolder vh in vhs)
+    //        {
+    //            if (vh.status != Status.RECYCLED)
+    //            {
+    //                if (IsVerticalOrientation())
+    //                {
+    //                    if (IsReverse)
+    //                    {
+    //                        vh.rectTransform.localPosition = new Vector3(0, (vh.current_index * (RowDimension.y + Spacing.y)), 0);
+    //                    }
+    //                    else
+    //                    {
+    //                        vh.rectTransform.localPosition = new Vector3(0, (-vh.current_index * (RowDimension.y + Spacing.y)), 0);
+    //                    }
+    //                }
+    //                else
+    //                {
+    //                    if (IsReverse)
+    //                    {
+    //                        vh.rectTransform.localPosition = new Vector3((-vh.current_index * (RowDimension.x + Spacing.x)), 0, 0);
+    //                    }
+    //                    else
+    //                    {
+    //                        vh.rectTransform.localPosition = new Vector3((vh.current_index * (RowDimension.x + Spacing.x)), 0, 0);
+    //                    }
+    //                }
+    //            }
+    //        }
+
+
+
+    //    }
+
+    //    private bool IsVerticalOrientation()
+    //    {
+    //        return orientation == Orientation.VERTICAL;
+    //    }
+    //    private void ClampList()
+    //    {
+    //        if (IsVerticalOrientation())
+    //        {
+    //            if (IsReverse)
+    //            {
+    //                if (GridRectTransform.offsetMax.y > 0)
+    //                {
+    //                    GridRectTransform.localPosition = new Vector2(GridRectTransform.localPosition.x, 0);
+    //                    GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, 0);
+    //                    GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
+    //                }
+    //                else if (GridRectTransform.offsetMax.y < -LIMIT_BOTTOM)
+    //                {
+    //                    //  GridRectTransform.localPosition = new Vector2(GridRectTransform.offsetMax.x, -LIMIT_BOTTOM);
+    //                    GridRectTransform.localPosition = new Vector2(GridRectTransform.localPosition.x, -LIMIT_BOTTOM);
+    //                    GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, -LIMIT_BOTTOM);
+    //                    GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
+    //                }
+    //            }
+    //            else
+    //            {
+    //                if (GridRectTransform.offsetMax.y < 0)
+    //                {
+    //                    GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, 0);
+    //                    GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
+    //                }
+    //                else if (GridRectTransform.offsetMax.y > LIMIT_BOTTOM)
+    //                {
+    //                    GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, LIMIT_BOTTOM);
+    //                    GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
+    //                }
+    //            }
+
+    //        }
+    //        else
+    //        {
+
+    //            if (IsReverse)
+    //            {
+    //                if (GridRectTransform.offsetMax.x < 0)
+    //                {
+    //                    GridRectTransform.offsetMax = new Vector2(0, GridRectTransform.offsetMax.y);
+    //                    GridRectTransform.sizeDelta = new Vector2(0, GridRectTransform.sizeDelta.y);
+    //                }
+    //                else if (GridRectTransform.offsetMax.x > LIMIT_BOTTOM)
+    //                {
+    //                    GridRectTransform.offsetMax = new Vector2(LIMIT_BOTTOM, GridRectTransform.offsetMax.y);
+    //                    GridRectTransform.sizeDelta = new Vector2(0, GridRectTransform.sizeDelta.y);
+    //                }
+    //            }
+    //            else
+    //            {
+    //                //Debug.Log(GridRectTransform.offsetMax.ToString() + " AND " + GridRectTransform.sizeDelta.ToString());
+    //                if (GridRectTransform.offsetMax.x > 0)
+    //                {
+    //                    //Debug.Log(GridRectTransform.localPosition);
+    //                    GridRectTransform.localPosition = new Vector2(0, GridRectTransform.localPosition.y);
+    //                    GridRectTransform.offsetMax = new Vector2(0, GridRectTransform.offsetMax.y);
+    //                    GridRectTransform.sizeDelta = new Vector2(0, GridRectTransform.sizeDelta.y);
+    //                }
+    //                else if (GridRectTransform.offsetMax.x < -LIMIT_BOTTOM)
+    //                {
+    //                    GridRectTransform.localPosition = new Vector2(-LIMIT_BOTTOM, GridRectTransform.localPosition.y);
+    //                    GridRectTransform.offsetMax = new Vector2(-LIMIT_BOTTOM, GridRectTransform.offsetMax.y);
+    //                    GridRectTransform.sizeDelta = new Vector2(0, GridRectTransform.sizeDelta.y);
+    //                }
+    //            }
+    //        }
+    //    }
+
+    //}
+
+
+    public static class Utils
+    {
+
+        public static void Sort(List<ViewHolder> list, bool upperFirst)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                for (int j = i + 1; j < list.Count; j++)
+                {
+                    if (upperFirst)
+                    {
+                        if (list[i].current_index > list[j].current_index)
+                        {
+                            ViewHolder aux = list[i];
+                            list[i] = list[j];
+                            list[j] = aux;
+                        }
+                    }
+                    else
+                    {
+                        if (list[i].current_index < list[j].current_index)
+                        {
+                            ViewHolder aux = list[i];
+                            list[i] = list[j];
+                            list[j] = aux;
+                        }
+                    }
+                }
+            }
+        }
+        public static int GetLowerPosition(List<ViewHolder> list)
+        {
+            int lower = int.MaxValue;
+            foreach (ViewHolder scrap in list)
+            {
+                if (scrap.current_index < lower)
+                {
+                    lower = scrap.current_index;
+                }
+            }
+            return lower != int.MaxValue ? lower : -1;
+        }
+
+        public static int GetUpperPosition(List<ViewHolder> list)
+        {
+            int upper = -1;
+            foreach (ViewHolder scrap in list)
+            {
+                if (scrap.current_index > upper)
+                {
+                    upper = scrap.current_index;
+                }
+            }
+            return upper;
+        }
+    }
 }
