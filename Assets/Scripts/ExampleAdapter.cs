@@ -6,9 +6,9 @@ using UnityEngine.UI;
 public class ExampleAdapter : RecyclerView.Adapter<ExampleAdapter.ViewHolder>
 {
 
-    public int i = 50;
+    private int i = 50;
 
-    public List<GameObject> list = new List<GameObject>();
+    private List<GameObject> list = new List<GameObject>();
     void Start(){
      
         
@@ -40,6 +40,7 @@ public class ExampleAdapter : RecyclerView.Adapter<ExampleAdapter.ViewHolder>
         text.transform.SetParent(row.transform);
         row.AddComponent<Image>();
         list.Add(row);
+
         return row;
     }
 
@@ -104,7 +105,7 @@ public class ExampleAdapter : RecyclerView.Adapter<ExampleAdapter.ViewHolder>
 
         if (GUI.Button(new Rect(10, 70, 50, 30), "Click"))
         {
-            ScrollTo(i);
+           // ScrollTo(i);
            // ScrollTo(new Vector2(0, 0.5f));
         }
             

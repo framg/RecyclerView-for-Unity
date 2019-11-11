@@ -327,7 +327,6 @@ MonoBehaviour:
   orientation: 0
   Spacing: {x: 0, y: 0}
   IsReverse: 0
-  LIMIT_BOTTOM: 0
   i: 50
   list: []
 --- !u!114 &407431876
@@ -661,8 +660,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   orientation: 0
   Spacing: {x: 60, y: 60}
-  IsReverse: 1
-  LIMIT_BOTTOM: 0
+  IsReverse: 0
   i: 50
   list: []
 --- !u!114 &2079169608
