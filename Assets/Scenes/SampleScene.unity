@@ -324,11 +324,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5fe7c93dd584a941b33329b409c4f22, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  decelerationRate: 0.5
   orientation: 0
   Spacing: {x: 0, y: 0}
   IsReverse: 0
-  i: 50
-  list: []
+  PoolSize: 10
+  CacheSize: 3
 --- !u!114 &407431876
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -519,7 +520,7 @@ RectTransform:
   - {fileID: 235859496}
   - {fileID: 2079169602}
   m_Father: {fileID: 0}
-  m_RootOrder: 1
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -658,11 +659,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5fe7c93dd584a941b33329b409c4f22, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  decelerationRate: 0.5
   orientation: 0
-  Spacing: {x: 60, y: 60}
+  Spacing: {x: 0, y: 20}
   IsReverse: 0
-  i: 50
-  list: []
+  PoolSize: 12
+  CacheSize: 3
 --- !u!114 &2079169608
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -800,5 +802,5 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 2
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

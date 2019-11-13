@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class ExampleAdapter : RecyclerView.Adapter<ExampleAdapter.ViewHolder>
+public class ExampleAdapter : UI.RecyclerView<ExampleAdapter.Holder>.Adapter
 {
 
     private int i = 50;
@@ -24,7 +24,7 @@ public class ExampleAdapter : RecyclerView.Adapter<ExampleAdapter.ViewHolder>
         return 50;
     }
 
-    public override void OnBindViewHolder(ViewHolder holder, int i)
+    public override void OnBindViewHolder(Holder holder, int i)
     {
         holder.text.text = i.ToString();
     }
@@ -88,11 +88,11 @@ public class ExampleAdapter : RecyclerView.Adapter<ExampleAdapter.ViewHolder>
         return objAux.transform.position;
     }
 
-    public class ViewHolder : RecyclerView.ViewHolder
+    public class Holder : ViewHolder
     {
         public Text text;
 
-        public ViewHolder(GameObject itemView) : base(itemView)
+        public Holder(GameObject itemView) : base(itemView)
         {
             text = itemView.transform.GetChild(0).GetComponent<Text>();
         }
