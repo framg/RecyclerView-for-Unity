@@ -10,32 +10,47 @@ using System.IO;
 #endif
 namespace UI
 {
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <typeparam name="T">T must be an extension of ViewHolder from RecyclerView.</typeparam>
     public abstract class RecyclerView<T> : MonoBehaviour, RecyclerView<T>.IAdapter
         where T : RecyclerView<T>.ViewHolder
     {
-
+        #if (UNITY_EDITOR)
         [Range(0, 1f)]
         [ReadOnlyWhenPlaying]
+        #endif
         public float decelerationRate = 0.5f;
 
+        #if (UNITY_EDITOR)
         [ReadOnlyWhenPlaying]
         [Header("List orientation")]
+        #endif
         public Orientation orientation;
 
+        #if (UNITY_EDITOR)
         [ReadOnlyWhenPlaying]
         [Header("Margin between rows")]
+        #endif
         public Vector2 Spacing;
 
+        #if (UNITY_EDITOR)
         [ReadOnlyWhenPlaying]
         [Header("Set true to make the list reverse")]
+        #endif
         public bool IsReverse;
 
+        #if (UNITY_EDITOR)
         [Space]
         [ReadOnlyWhenPlaying]
         [Header("Pool size and cache size (do not modify if you are not sure)")]
+        #endif
         public int PoolSize = 10;
 
+        #if (UNITY_EDITOR)
         [ReadOnlyWhenPlaying]
+        #endif
         public int CacheSize = 3;
 
         private Pool pool;
@@ -50,7 +65,44 @@ namespace UI
 
         private LayoutManager layoutManager;
 
-        public void Awake()
+
+        public abstract class Adapter : RecyclerView<T>, IDataObservable
+        {
+            /// <summary>
+            /// 
+            /// </summary>
+            public void NotifyDatasetChanged()
+            {
+                OnDataChange();
+            }
+            /// <summary>
+            /// Scroll to a certain position from [0, 
+            /// </summary>
+            /// <param name="pos"></param>
+            public void ScrollTo(Vector2 pos)
+            {
+                layoutManager.ScrollTo(pos);
+            }
+            /// <summary>
+            /// 
+            /// </summary>
+            /// <param name="position"></param>
+            public void ScrollTo(int position)
+            {
+                layoutManager.ScrollTo(position);
+
+            }
+            /// <summary>
+            /// /
+            /// </summary>
+            /// <param name="position"></param>
+            public void SmothScrollTo(int position)
+            {
+                layoutManager.SmothScrollTo(position);
+            }
+        }
+
+        private void Awake()
         {
             layoutManager = new LayoutManager(this, orientation);
 
@@ -225,10 +277,8 @@ namespace UI
         private void OnScroll()
         {
             RemoveNotVisibleViewHolders();
-            RemoveViewHoldersFromCache(true);
-            RemoveViewHoldersFromCache(false);
-            AddNewViewHoldersToCache(true);
-            AddNewViewHoldersToCache(false);
+            RemoveViewHoldersFromCache();
+            AddNewViewHoldersToCache();
         }
 
 
@@ -259,36 +309,33 @@ namespace UI
             return str;
         }
 
-        private void AddNewViewHoldersToCache(bool top)
+        private void AddNewViewHoldersToCache()
         {
-            if (top)
+     
+            int nTop = CacheSize - cacheTop.Count;
+            for (int i = 0; i < nTop; i++)
             {
-                int nTop = CacheSize - cacheTop.Count;
-                for (int i = 0; i < nTop; i++)
+                IViewHolderInfo vh = TryGetViewHolderForPosition(Utils.GetUpperPosition(cacheTop.Count > 0 ? cacheTop : attachedScrap) + 1);
+                if (vh != null)
                 {
-                    IViewHolderInfo vh = TryGetViewHolderForPosition(Utils.GetUpperPosition(cacheTop.Count > 0 ? cacheTop : attachedScrap) + 1);
-                    if (vh != null)
-                    {
-                        layoutManager.AttachToGrid(vh, top);
-                        ThrowToCache(vh, true);
-                        OnBindViewHolder((T)Convert.ChangeType(vh, typeof(T)), vh.CurrentIndex);
-                    }
+                    layoutManager.AttachToGrid(vh, true);
+                    ThrowToCache(vh, true);
+                    OnBindViewHolder((T)Convert.ChangeType(vh, typeof(T)), vh.CurrentIndex);
                 }
             }
-            else
+
+            int nBot = CacheSize - cacheBot.Count;
+            for (int i = 0; i < nBot; i++)
             {
-                int nBot = CacheSize - cacheBot.Count;
-                for (int i = 0; i < nBot; i++)
+                IViewHolderInfo vh = TryGetViewHolderForPosition(Utils.GetLowerPosition(cacheBot.Count > 0 ? cacheBot : attachedScrap) - 1);
+                if (vh != null)
                 {
-                    IViewHolderInfo vh = TryGetViewHolderForPosition(Utils.GetLowerPosition(cacheBot.Count > 0 ? cacheBot : attachedScrap) - 1);
-                    if (vh != null)
-                    {
-                        layoutManager.AttachToGrid(vh, top);
-                        ThrowToCache(vh, false);
-                        OnBindViewHolder((T)Convert.ChangeType(vh, typeof(T)), vh.CurrentIndex);
-                    }
+                    layoutManager.AttachToGrid(vh, false);
+                    ThrowToCache(vh, false);
+                    OnBindViewHolder((T)Convert.ChangeType(vh, typeof(T)), vh.CurrentIndex);
                 }
             }
+           
         }
 
         private void ThrowToPool(IViewHolderInfo vh)
@@ -300,6 +347,7 @@ namespace UI
             else
             {
                 vh.Status = ViewHolder.Status.RECYCLED;
+                vh.TimeStamp = new DateTime().Ticks;
                 vh.ItemView.SetActive(false);
                 pool.Add(vh);
             }
@@ -322,6 +370,10 @@ namespace UI
 
         private void RemoveNotVisibleViewHolders()
         {
+            
+
+
+
             attachedScrap.AddRange(cacheTop);
             attachedScrap.AddRange(cacheBot);
             cacheTop.Clear();
@@ -358,32 +410,29 @@ namespace UI
             }
         }
 
-        private void RemoveViewHoldersFromCache(bool top)
+        private void RemoveViewHoldersFromCache()
         {
-            if (top)
+         
+            Utils.Sort(cacheTop, true);
+            if (cacheTop.Count > CacheSize)
             {
-                Utils.Sort(cacheTop, true);
-                if (cacheTop.Count > CacheSize)
+                for (int i = cacheTop.Count - 1; i >= CacheSize; i--)
                 {
-                    for (int i = cacheTop.Count - 1; i >= CacheSize; i--)
-                    {
-                        ThrowToPool(cacheTop[i]);
-                        cacheTop.RemoveAt(i);
-                    }
+                    ThrowToPool(cacheTop[i]);
+                    cacheTop.RemoveAt(i);
                 }
             }
-            else
+
+            Utils.Sort(cacheBot, false);
+            if (cacheBot.Count > CacheSize)
             {
-                Utils.Sort(cacheBot, false);
-                if (cacheBot.Count > CacheSize)
+                for (int i = cacheBot.Count - 1; i >= CacheSize; i--)
                 {
-                    for (int i = cacheBot.Count - 1; i >= CacheSize; i--)
-                    {
-                        ThrowToPool(cacheBot[i]);
-                        cacheBot.RemoveAt(i);
-                    }
+                    ThrowToPool(cacheBot[i]);
+                    cacheBot.RemoveAt(i);
                 }
             }
+           
         }
         
         private void Clear()
@@ -441,24 +490,6 @@ namespace UI
             layoutManager.IsCreating = false;
         }
 
-
-        public void ScrollTo(Vector2 pos)
-        {
-            layoutManager.ScrollTo(pos);
-        }
-
-        public void ScrollTo(int position)
-        {
-            layoutManager.ScrollTo(position);
-
-        }
-
-        public void SmothScrollTo(int position)
-        {
-            layoutManager.SmothScrollTo(position);
-        }
-
-
         private class Pool
         {
             
@@ -488,7 +519,7 @@ namespace UI
                 }
                 if (recycle)
                 {
-                    IViewHolderInfo vh2 = Scrap.Count > 0 ? Scrap[0] : null; //TODO coger por antiguedad
+                    IViewHolderInfo vh2 = Utils.GetOlder(Scrap);
                     if (vh2 != null)
                     {
                         Scrap.Remove(vh2);
@@ -1052,6 +1083,20 @@ namespace UI
         private static class Utils
         {
 
+            public static IViewHolderInfo GetOlder(List<IViewHolderInfo> list)
+            {
+                IViewHolderInfo older = null;
+                foreach(IViewHolderInfo holder in list)
+                {
+                    if(older == null || holder.TimeStamp < older.TimeStamp)
+                    {
+                        older = holder;
+                    }
+                }
+
+                return older;
+            }
+
             public static void Sort(List<IViewHolderInfo> list, bool upperFirst)
             {
                 for (int i = 0; i < list.Count; i++)
@@ -1120,6 +1165,7 @@ namespace UI
             GameObject ItemView { get; set; }
             RectTransform RectTransform { get; set; }
             ViewHolder.Status Status { get; set; }
+            long TimeStamp { get; set; }
             void Destroy();
             bool IsHidden();
         }
@@ -1130,12 +1176,14 @@ namespace UI
             RectTransform rectTransform;
             int last_index, current_index;
             Status status;
+            long timeStamp;
 
             int IViewHolderInfo.LastIndex { get => last_index;  set => last_index = value; }
             int IViewHolderInfo.CurrentIndex { get => current_index; set => current_index = value; }
             GameObject IViewHolderInfo.ItemView { get => itemView; set => itemView = value; }
             RectTransform IViewHolderInfo.RectTransform { get => rectTransform; set => rectTransform = value; }
             Status IViewHolderInfo.Status { get => status; set => status = value; }
+            public long TimeStamp { get => timeStamp; set => timeStamp = value; }
 
             public ViewHolder(GameObject itemView)
             {
@@ -1217,14 +1265,6 @@ namespace UI
 
             }
 
-        }
-
-        public abstract class Adapter : RecyclerView<T>, IDataObservable
-        {
-            public void NotifyDatasetChanged()
-            {
-                OnDataChange();
-            }
         }
 
         private interface IAdapter
@@ -1391,13 +1431,11 @@ namespace UI
     [CustomPropertyDrawer(typeof(ReadOnlyWhenPlayingAttribute))]
     public class ReadOnlyWhenPlayingAttributeDrawer : PropertyDrawer
     {
-        // Necessary since some properties tend to collapse smaller than their content
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
             return EditorGUI.GetPropertyHeight(property, label, true);
         }
-
-        // Draw a disabled property field
+       
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             GUI.enabled = !Application.isPlaying;
