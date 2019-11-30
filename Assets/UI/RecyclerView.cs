@@ -113,25 +113,12 @@ namespace UI
             OnDataChange();
         }
 
-        //private IViewHolderInfo GetViewHolderFromScrap(int position)
-        //{
-        //    foreach (IViewHolderInfo vh in AttachedScrap)
-        //    {
-        //        if (vh.CurrentIndex == position)
-        //        {
-        //            return vh;
-        //        }
-        //    }
-        //    return null;
-        //}
-
         private void AddToAttachedScrap(IViewHolderInfo vh, bool up)
         {
             layoutManager.AttachToGrid(vh, up);         
             vh.ItemView.SetActive(true);
             AttachedScrap.Add(vh);
         }  
-
 
 
         private IViewHolderInfo TryGetViewHolderForPosition(int position)
@@ -187,62 +174,6 @@ namespace UI
             }
         }
 
-
-        //private int GetLowerPosition()
-        //{
-        //    int lower = int.MaxValue;
-        //    foreach (IViewHolderInfo scrap in AttachedScrap)
-        //    {
-        //        if (scrap.CurrentIndex < lower)
-        //        {
-        //            lower = scrap.CurrentIndex;
-        //        }
-        //    }
-        //    return lower;
-        //}
-
-        //private int GetUpperPosition()
-        //{
-        //    int upper = 0;
-        //    foreach (IViewHolderInfo scrap in AttachedScrap)
-        //    {
-        //        if (scrap.CurrentIndex > upper)
-        //        {
-        //            upper = scrap.CurrentIndex;
-        //        }
-        //    }
-        //    return upper;
-        //}
-
-        //private int GetLowerChild()
-        //{
-        //    int lower = int.MaxValue;
-        //    foreach (IViewHolderInfo scrap in AttachedScrap)
-        //    {
-        //        if (scrap.ItemView.transform.GetSiblingIndex() < lower)
-        //        {
-        //            lower = scrap.ItemView.transform.GetSiblingIndex();
-        //        }
-        //    }
-        //    return lower;
-        //}
-
-
-        //private int GetUpperChild()
-        //{
-        //    int upper = 0;
-        //    foreach (IViewHolderInfo scrap in AttachedScrap)
-        //    {
-        //        if (scrap.ItemView.transform.GetSiblingIndex() > upper)
-        //        {
-        //            upper = scrap.ItemView.transform.GetSiblingIndex();
-        //        }
-        //    }
-        //    return upper;
-        //}
-
-
-
         private void ThrowAttachedScrapToCache()
         {
             foreach (IViewHolderInfo vh in AttachedScrap)
@@ -255,7 +186,7 @@ namespace UI
         {
             int firstPosition = layoutManager.GetFirstPosition();
             List<IViewHolderInfo> TmpScrap = new List<IViewHolderInfo>();
-
+            
             for(int i=firstPosition - 1; i< firstPosition + layoutManager.GetScreenListSize()+1; i++)
             {
                 IViewHolderInfo vh = TryGetViewHolderForPosition(i);
@@ -266,40 +197,8 @@ namespace UI
             }
 
             ThrowAttachedScrapToCache();
-
-
-            //for (int i = TmpScrap.Count - 1; i >= 0; i--)
-            //{
-            //    IViewHolderInfo vh = TmpScrap[i];
-            //    if (vh.IsHidden())
-            //    {
-            //        Cache.Add(vh);
-            //       // TmpScrap.RemoveAt(i);
-            //        if (Cache.Count > CacheSize)
-            //        {
-            //            ThrowToPool(Cache[0]);
-            //            Cache.RemoveAt(0);
-            //        }
-   
-            //    }
-            //}
-
-
-
-
-
-
-
             AttachedScrap.Clear();
             AttachedScrap.AddRange(TmpScrap);
-            //string str = "";
-            //str += "TmpScrap: {";
-            //foreach (IViewHolderInfo vh in TmpScrap)
-            //{
-            //    str += vh.CurrentIndex + ",";
-            //}
-            //Debug.Log(str);
-            Debug.Log(ToString());
             
         }
 
@@ -312,16 +211,6 @@ namespace UI
             {
                 str += vh.CurrentIndex + ",";
             }
-            //str += "} Cache Top: {";
-            //foreach (IViewHolderInfo vh in UpperCache)
-            //{
-            //    str += vh.CurrentIndex + ",";
-            //}
-            //str += "} Cache Bot: {";
-            //foreach (IViewHolderInfo vh in LowerCache)
-            //{
-            //    str += vh.CurrentIndex + ",";
-            //}
             str += "} Cache: {";
             foreach (IViewHolderInfo vh in Cache)
             {
@@ -416,15 +305,7 @@ namespace UI
                         OnBindViewHolder((T)Convert.ChangeType(vh2, typeof(T)), i);
                     }
                 }            
-                //foreach(IViewHolderInfo vh0 in AttachedScrap)
-                //{
-                //    layoutManager.SetPositionViewHolder(vh0);
-                //}
-
-               // layoutManager.ReorderList(AttachedScrap);
                 layoutManager.ClampList();
-
-             //   GetScrap();
             }
 
             layoutManager.IsCreating = false;
@@ -484,8 +365,8 @@ namespace UI
         private class LayoutManager
         {
             private Orientation orientation;
-            private float rowHeight;
             private Vector2 RowDimension;
+            private Vector2 RowScale;
             private ScrollRect ScrollRect;
             private RectTransform SelfRectTransform { get; set; }
             private RectTransform GridRectTransform { get; set; }
@@ -504,12 +385,50 @@ namespace UI
 
             public int GetFirstPosition()
             {
-                return Mathf.RoundToInt(Mathf.Clamp(Grid.transform.GetComponent<RectTransform>().offsetMin.y, 0, LIMIT_BOTTOM) / (RowDimension.x + recyclerView.Spacing.x));           
+                if (IsVerticalOrientation())
+                {
+                    if (recyclerView.IsReverse)
+                    {
+                        return Mathf.Abs(Mathf.RoundToInt(Mathf.Clamp(Grid.transform.GetComponent<RectTransform>().offsetMin.y, -LIMIT_BOTTOM, 0) / (GetRowSize().y)));
+
+                    }
+                    else
+                    {
+                        return Mathf.RoundToInt(Mathf.Clamp(Grid.transform.GetComponent<RectTransform>().offsetMin.y, 0, LIMIT_BOTTOM) / (GetRowSize().y));
+
+                    }
+                }
+                else
+                {
+                   
+
+                    if (recyclerView.IsReverse)
+                    {
+                        return Mathf.RoundToInt(Mathf.Clamp(Grid.transform.GetComponent<RectTransform>().offsetMin.x, 0, LIMIT_BOTTOM) / (GetRowSize().x));
+
+                    }
+                    else
+                    {
+                        return Mathf.Abs(Mathf.RoundToInt(Mathf.Clamp(Grid.transform.GetComponent<RectTransform>().offsetMin.x, -LIMIT_BOTTOM, 0) / (GetRowSize().x)));
+
+                    }
+                }
+
+
+
             }
 
             public int GetScreenListSize()
             {
-                return Mathf.FloorToInt(Screen.height / (RowDimension.x + recyclerView.Spacing.x));
+                if (!IsVerticalOrientation())
+                {
+                    return Mathf.FloorToInt(Screen.width / GetRowSize().x);
+                }
+                else
+                {
+                    return Mathf.FloorToInt(Screen.height / GetRowSize().y);
+                }
+              
             }
 
             public void Create()
@@ -619,73 +538,49 @@ namespace UI
                 isClickDown = false;
             }
 
-            public float GetRowSize()
+            public Vector2 GetRowSize()
             {
-                return (RowDimension.y + recyclerView.Spacing.y);
+                if (IsVerticalOrientation())
+                {
+                    return new Vector2(0, ((RowDimension.y * RowScale.y) + recyclerView.Spacing.y));
+                }
+                else
+                {
+                    return new Vector2(((RowDimension.x * RowScale.x) + recyclerView.Spacing.x), 0);
+                }              
             }
 
 
             public void SetPositionViewHolder(IViewHolderInfo vh)
             {
-               
+                Vector2 size = GetRowSize();
+    
+
                 if (IsVerticalOrientation())
                 {
                     if (recyclerView.IsReverse)
                     {
-                        vh.RectTransform.localPosition = new Vector3(0, (vh.CurrentIndex * (RowDimension.y + recyclerView.Spacing.y)), 0);
+                        vh.RectTransform.localPosition = new Vector3(0, (vh.CurrentIndex * size.y), 0);
                     }
                     else
                     {
-                        vh.RectTransform.localPosition = new Vector3(0, (-vh.CurrentIndex * (RowDimension.y + recyclerView.Spacing.y)), 0);
+                        vh.RectTransform.localPosition = new Vector3(0, (-vh.CurrentIndex * size.y), 0);
                     }
                 }
                 else
                 {
                     if (recyclerView.IsReverse)
                     {
-                        vh.RectTransform.localPosition = new Vector3((-vh.CurrentIndex * (RowDimension.x + recyclerView.Spacing.x)), 0, 0);
+                        vh.RectTransform.localPosition = new Vector3((-vh.CurrentIndex * size.x), 0, 0);
                     }
                     else
                     {
-                        vh.RectTransform.localPosition = new Vector3((vh.CurrentIndex * (RowDimension.x + recyclerView.Spacing.x)), 0, 0);
+                        vh.RectTransform.localPosition = new Vector3((vh.CurrentIndex * size.x), 0, 0);
                     }
                 }
             }
 
-            //public void ReorderList(List<IViewHolderInfo> vhs)
-            //{ 
-            //    foreach (IViewHolderInfo vh in vhs)
-            //    {
-            //        if (vh.Status != ViewHolder.Status.RECYCLED)
-            //        {
-            //            if (IsVerticalOrientation())
-            //            {
-            //                if (recyclerView.IsReverse)
-            //                {
-            //                    vh.RectTransform.localPosition = new Vector3(0, (vh.CurrentIndex * (RowDimension.y + recyclerView.Spacing.y)), 0);
-            //                }
-            //                else
-            //                {
-            //                    vh.RectTransform.localPosition = new Vector3(0, (-vh.CurrentIndex * (RowDimension.y + recyclerView.Spacing.y)), 0);
-            //                }
-            //            }
-            //            else
-            //            {
-            //                if (recyclerView.IsReverse)
-            //                {
-            //                    vh.RectTransform.localPosition = new Vector3((-vh.CurrentIndex * (RowDimension.x + recyclerView.Spacing.x)), 0, 0);
-            //                }
-            //                else
-            //                {
-            //                    vh.RectTransform.localPosition = new Vector3((vh.CurrentIndex * (RowDimension.x + recyclerView.Spacing.x)), 0, 0);
-            //                }
-            //            }
-            //        }
-            //    }
-
-
-
-            //}
+           
 
             private void Invalidate()
             {
@@ -764,39 +659,39 @@ namespace UI
             public void OnDataChange(GameObject initialVH, int pos = 0)
             {
                 RowDimension = new Vector2(initialVH.GetComponent<RectTransform>().rect.width, initialVH.GetComponent<RectTransform>().rect.height);
+                RowScale = initialVH.GetComponent<RectTransform>().localScale;
+                Vector2 RowSize = GetRowSize();
 
                 if (IsVerticalOrientation())
                 {
-                    LIMIT_BOTTOM = ((recyclerView.GetItemCount() * (RowDimension.y + recyclerView.Spacing.y)) - SelfRectTransform.rect.height) - recyclerView.Spacing.y;
-                   
+                    LIMIT_BOTTOM = ((recyclerView.GetItemCount() * RowSize.y) - SelfRectTransform.rect.height) - recyclerView.Spacing.y;
+
                     if (recyclerView.IsReverse)
                     {
-                 //       GridRectTransform.localPosition = new Vector2(GridRectTransform.localPosition.x, -(RowDimension.y + recyclerView.Spacing.y) * pos);
-                        GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, -(RowDimension.y + recyclerView.Spacing.y) * pos);
+                        GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, -RowSize.y * pos);
                         GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
                     }
                     else
                     {
-                //       GridRectTransform.localPosition = new Vector2(GridRectTransform.localPosition.x, (RowDimension.y + recyclerView.Spacing.y) * pos);
-                        GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, (RowDimension.y + recyclerView.Spacing.y) * pos);
+                        GridRectTransform.offsetMax = new Vector2(GridRectTransform.offsetMax.x, RowSize.y * pos);
                         GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
                     }
 
                 }
                 else
                 {
-                    LIMIT_BOTTOM = ((recyclerView.GetItemCount() * (RowDimension.x + recyclerView.Spacing.x)) - SelfRectTransform.rect.width) - recyclerView.Spacing.x;
+                    LIMIT_BOTTOM = ((recyclerView.GetItemCount() * RowSize.x) - SelfRectTransform.rect.width) - recyclerView.Spacing.x;
 
 
                     if (recyclerView.IsReverse)
                     {
-                        GridRectTransform.offsetMax = new Vector2((RowDimension.x + recyclerView.Spacing.x) * pos, GridRectTransform.offsetMax.y);
+                        GridRectTransform.offsetMax = new Vector2(RowSize.x * pos, GridRectTransform.offsetMax.y);
                         GridRectTransform.sizeDelta = new Vector2(0, GridRectTransform.sizeDelta.y);
                     }
                     else
                     {
-                        GridRectTransform.localPosition = new Vector2(-(RowDimension.x + recyclerView.Spacing.x) * pos, GridRectTransform.localPosition.y);
-                        GridRectTransform.offsetMax = new Vector2(-(RowDimension.x + recyclerView.Spacing.x) * pos, GridRectTransform.offsetMax.y);
+                        GridRectTransform.localPosition = new Vector2(-RowSize.x * pos, GridRectTransform.localPosition.y);
+                        GridRectTransform.offsetMax = new Vector2(-RowSize.x * pos, GridRectTransform.offsetMax.y);
                         GridRectTransform.sizeDelta = new Vector2(0, GridRectTransform.sizeDelta.y);
                     }
 
@@ -881,14 +776,14 @@ namespace UI
 
             public void SmothScrollTo(int position)
             {
-                if (IsVerticalOrientation())
-                {
-                    recyclerView.StartCoroutine(IScrollTo(new Vector2(0, ((RowDimension.y + recyclerView.Spacing.y) * position) / LIMIT_BOTTOM)));
-                }
-                else
-                {
-                    recyclerView.StartCoroutine(IScrollTo(new Vector2((((RowDimension.x + recyclerView.Spacing.x) * position) / LIMIT_BOTTOM), 0)));
-                }
+                //if (IsVerticalOrientation())
+                //{
+                //    recyclerView.StartCoroutine(IScrollTo(new Vector2(0, ((RowDimension.y + recyclerView.Spacing.y) * position) / LIMIT_BOTTOM)));
+                //}
+                //else
+                //{
+                //    recyclerView.StartCoroutine(IScrollTo(new Vector2((((RowDimension.x + recyclerView.Spacing.x) * position) / LIMIT_BOTTOM), 0)));
+                //}
             }
 
 
@@ -1045,63 +940,6 @@ namespace UI
             }
 
         }
-
-        //private static class Utils
-        //{
-     
-        //    public static void Sort(List<IViewHolderInfo> list, bool upperFirst)
-        //    {
-        //        for (int i = 0; i < list.Count; i++)
-        //        {
-        //            for (int j = i + 1; j < list.Count; j++)
-        //            {
-        //                if (upperFirst)
-        //                {
-        //                    if (list[i].CurrentIndex > list[j].CurrentIndex)
-        //                    {
-        //                        IViewHolderInfo aux = list[i];
-        //                        list[i] = list[j];
-        //                        list[j] = aux;
-        //                    }
-        //                }
-        //                else
-        //                {
-        //                    if (list[i].CurrentIndex < list[j].CurrentIndex)
-        //                    {
-        //                        IViewHolderInfo aux = list[i];
-        //                        list[i] = list[j];
-        //                        list[j] = aux;
-        //                    }
-        //                }
-        //            }
-        //        }
-        //    }
-        //    public static int GetLowerPosition(List<IViewHolderInfo> list)
-        //    {
-        //        int lower = int.MaxValue;
-        //        foreach (IViewHolderInfo scrap in list)
-        //        {
-        //            if (scrap.CurrentIndex < lower)
-        //            {
-        //                lower = scrap.CurrentIndex;
-        //            }
-        //        }
-        //        return lower != int.MaxValue ? lower : -1;
-        //    }
-
-        //    public static int GetUpperPosition(List<IViewHolderInfo> list)
-        //    {
-        //        int upper = -1;
-        //        foreach (IViewHolderInfo scrap in list)
-        //        {
-        //            if (scrap.CurrentIndex > upper)
-        //            {
-        //                upper = scrap.CurrentIndex;
-        //            }
-        //        }
-        //        return upper;
-        //    }
-        //}
 
 
         public enum Orientation
