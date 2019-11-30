@@ -11,7 +11,8 @@ using System.IO;
 namespace UI
 {
     /// <summary>
-    /// 
+    /// Recycler view for Unity.
+    /// List of elements, it use pooling to display items in the screen. So it's going to keep a small list instead of the full elements list.
     /// </summary>
     /// <typeparam name="T">T must be an extension of ViewHolder from RecyclerView.</typeparam>
     public abstract class RecyclerView<T> : MonoBehaviour, RecyclerView<T>.IAdapter
@@ -46,7 +47,7 @@ namespace UI
         [ReadOnlyWhenPlaying]
         [Header("Pool size and cache size (do not modify if you are not sure)")]
         #endif
-        public int PoolSize = 10;
+        public int PoolSize = 3;
 
         #if (UNITY_EDITOR)
         [ReadOnlyWhenPlaying]
@@ -698,7 +699,7 @@ namespace UI
                 }
             }
 
-            private IEnumerator IScrollTo(Vector2 dir, float speed = 100)
+            private IEnumerator IScrollTo(Vector2 dir, float speed = 50)
             {
                 ScrollRect.inertia = false;
                 if (IsVerticalOrientation())
@@ -776,14 +777,14 @@ namespace UI
 
             public void SmothScrollTo(int position)
             {
-                //if (IsVerticalOrientation())
-                //{
-                //    recyclerView.StartCoroutine(IScrollTo(new Vector2(0, ((RowDimension.y + recyclerView.Spacing.y) * position) / LIMIT_BOTTOM)));
-                //}
-                //else
-                //{
-                //    recyclerView.StartCoroutine(IScrollTo(new Vector2((((RowDimension.x + recyclerView.Spacing.x) * position) / LIMIT_BOTTOM), 0)));
-                //}
+                if (IsVerticalOrientation())
+                {
+                    recyclerView.StartCoroutine(IScrollTo(new Vector2(0, (GetRowSize().y * position) / LIMIT_BOTTOM)));
+                }
+                else
+                {
+                    recyclerView.StartCoroutine(IScrollTo(new Vector2(((GetRowSize().x * position) / LIMIT_BOTTOM), 0)));
+                }
             }
 
 
@@ -792,7 +793,7 @@ namespace UI
                 ScrollRect.inertia = false;
                 recyclerView.OnDataChange(pos);
                 yield return new WaitForEndOfFrame();
-               // OnScroll();
+                OnScroll();
                 ScrollRect.inertia = true;
             }
 
@@ -1210,6 +1211,7 @@ namespace UI
             }
 
         }
+
     }
 
     public class ReadOnlyWhenPlayingAttribute : PropertyAttribute { }
