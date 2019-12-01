@@ -15,3 +15,6 @@ We have two options:
 
 ###### Option 1
 
+Right click on the hierarchy.
+And press UI/RecyclerView
+![GitHub Logo](/Images/image1.png)
