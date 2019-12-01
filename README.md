@@ -30,7 +30,7 @@ Once you added it, you'll see a template file like this one:
 using UnityEngine;
 using System.Collections;
 
-public class TestRecyclerView : UI.RecyclerView<TestRecyclerView.Holder>.Adapter {
+public class RecyclerView : UI.RecyclerView<TestRecyclerView.Holder>.Adapter {
 
     public override int GetItemCount()
     {
