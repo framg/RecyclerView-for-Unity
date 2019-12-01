@@ -23,3 +23,36 @@ And press UI/RecyclerView
 A new dialog box will display. Choose your name and press "Create".
 
 ![Image 1](https://github.com/framg/RecyclerView/blob/master/Images/image2.png)
+
+Once you added it, you'll see a template file like this one:
+
+```
+using UnityEngine;
+using System.Collections;
+
+public class TestRecyclerView : UI.RecyclerView<TestRecyclerView.Holder>.Adapter {
+
+    public override int GetItemCount()
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public override void OnBindViewHolder(Holder holder, int i)
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public override GameObject OnCreateViewHolder(Transform parent)
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public class Holder : ViewHolder
+    {
+        public Holder(GameObject itemView) : base(itemView)
+        {
+        }
+    }
+}
+```
+
