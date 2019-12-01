@@ -22,7 +22,7 @@ And press UI/RecyclerView
 
 A new dialog box will display. Choose your name and press "Create".
 
-![Image 1](https://github.com/framg/RecyclerView/blob/master/Images/image2.png)
+![Image 2](https://github.com/framg/RecyclerView/blob/master/Images/image2.png)
 
 Once you added it, you'll see a template file like this one:
 
@@ -82,9 +82,15 @@ OnBindViewHolder is going to bind our holder. So in here you need to populate th
 public override void OnBindViewHolder(Holder holder, int i)
 ```
 
+## Unity inspector.
 
+![Image 3](https://github.com/framg/RecyclerView/blob/master/Images/image3.PNG)
 
-
+ - We can modify the list orientation. (Vertical or Horizontal)
+ - Space between rows.
+ - Set the list in reverse order.
+ - Change the deceletarion rate of the scrolling.
+ - And at last change the cache size or pool size. If you are not sure about it don't do it.
 
 
 
