@@ -9,7 +9,7 @@ When we are working on a phone we usually don't want to keep too much memory in 
 During the scroll we are going to keep just a small list instead of the full data set, improving a lot the performance.
 
 
-## How to use the ReyclerView?
+## How to create the ReyclerView?
 
 We have two options:
 
@@ -30,7 +30,7 @@ Once you added it, you'll see a template file like this one:
 using UnityEngine;
 using System.Collections;
 
-public class RecyclerView : UI.RecyclerView<TestRecyclerView.Holder>.Adapter {
+public class RecyclerView : UI.RecyclerView<RecyclerView.Holder>.Adapter {
 
     public override int GetItemCount()
     {
@@ -55,4 +55,40 @@ public class RecyclerView : UI.RecyclerView<TestRecyclerView.Holder>.Adapter {
     }
 }
 ```
+
+###### Option 2
+
+Just create the class and extend it to UI.RecyclerView<ViewHolder>.Adapter. 
+ViewHolder needs to extend from the class ViewHolder insde of RecyclerView.
+    
+    
+## How to use the ReyclerView?
+
+In order to use it we have to complete following the methods:
+
+
+GetItemCount needs to return the number of items in your list.
+```
+public override int GetItemCount()
+```
+
+OnCreateViewHolder must return a copy from your row. (You could use Instantiate(GameObject) for expample)
+```
+public override GameObject OnCreateViewHolder(Transform parent)
+```
+
+OnBindViewHolder is going to bind our holder. So in here you need to populate the row.
+```
+public override void OnBindViewHolder(Holder holder, int i)
+```
+
+
+
+
+
+
+
+
+
+
 
