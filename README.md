@@ -18,4 +18,8 @@ We have two options:
 Right click on the hierarchy.
 And press UI/RecyclerView
 
+![Image 1](https://github.com/framg/RecyclerView/blob/master/Images/image1.png)
+
+A new dialog box will display. Choose your name and press "Create".
+
 ![Image 1](https://github.com/framg/RecyclerView/blob/master/Images/image2.png)
