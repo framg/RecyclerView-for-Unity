@@ -17,4 +17,5 @@ We have two options:
 
 Right click on the hierarchy.
 And press UI/RecyclerView
+
 ![Image 1](https://github.com/framg/RecyclerView/blob/master/Images/image2.png)
