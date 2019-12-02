@@ -13,7 +13,7 @@ During the scroll we are going to keep just a small list instead of the full dat
 
 We have two options:
 
-###### Option 1
+### Option 1
 
 Right click on the hierarchy.
 And press UI/RecyclerView
@@ -56,7 +56,7 @@ public class RecyclerView : UI.RecyclerView<RecyclerView.Holder>.Adapter {
 }
 ```
 
-###### Option 2
+### Option 2
 
 Just create the class and extend it to UI.RecyclerView<ViewHolder>.Adapter. 
 ViewHolder needs to extend from the class ViewHolder insde of RecyclerView.
