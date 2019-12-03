@@ -42,7 +42,7 @@ public class RecyclerView : UI.RecyclerView<RecyclerView.Holder>.Adapter {
         throw new System.NotImplementedException();
     }
 
-    public override GameObject OnCreateViewHolder(Transform parent)
+    public override GameObject OnCreateViewHolder()
     {
         throw new System.NotImplementedException();
     }
@@ -64,6 +64,7 @@ ViewHolder needs to extend from the class ViewHolder insde of RecyclerView.
     
 ## How to use the ReyclerView?
 
+You can check the ExampleAdapter I've created for this tutorial.
 In order to use it we have to complete following the methods:
 
 
@@ -74,7 +75,7 @@ public override int GetItemCount()
 
 OnCreateViewHolder must return a copy from your row. (You could use Instantiate(GameObject) for expample)
 ```
-public override GameObject OnCreateViewHolder(Transform parent)
+public override GameObject OnCreateViewHolder()
 ```
 
 OnBindViewHolder is going to bind our holder. So in here you need to populate the row.
@@ -82,15 +83,37 @@ OnBindViewHolder is going to bind our holder. So in here you need to populate th
 public override void OnBindViewHolder(Holder holder, int i)
 ```
 
-## Unity inspector.
+## Properties
+
+ - **Orientation**: We can modify the list orientation. (Vertical or Horizontal)
+ - **Spacing**: Space between rows.
+ - **IsReverse**: Set the list in reverse order.
+ - **decelerationRate**: Change the deceletarion rate of the scrolling.
+ - **PoolSize**: The size of the pool. (If you are not sure about it don't overwrite it)
+ - **CacheSize**: The size of the cache. (If you are not sure about it don't overwrite it)
+
+## Public Methods
+
+### Adapter
+ 
+ - **NotifyDatasetChanged**: You must call this method after the data set was modified.
+ - **ScrollBy**: Scroll by a given float value from 0 to 1 where 0 is the beggining and 1 is the end.
+ - **ScrollTo**: Scroll to the given position.
+ - **SmothScrollTo**: Smoth scroll to the given position.
+
+### ViewHolder
+
+ - **GetAdapterPosition**: Get the current position for that view holder.
+
+## Unity inspector
 
 ![Image 3](https://github.com/framg/RecyclerView/blob/master/Images/image3.PNG)
 
- - We can modify the list orientation. (Vertical or Horizontal)
- - Space between rows.
- - Set the list in reverse order.
- - Change the deceletarion rate of the scrolling.
- - And at last change the cache size or pool size. If you are not sure about it don't do it.
+
+ 
+ 
+
+
 
 
 
