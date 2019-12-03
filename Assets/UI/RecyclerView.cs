@@ -1,7 +1,7 @@
 ﻿/*
     MIT License
 
-    Copyright (c) 2019 RecyclerView for Unity
+    Copyright (c) 2019 Framg
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -87,7 +87,7 @@ namespace UI
         private readonly List<IViewHolderInfo> AttachedScrap = new List<IViewHolderInfo>();
         private readonly List<IViewHolderInfo> Cache = new List<IViewHolderInfo>();
 
-        public abstract GameObject OnCreateViewHolder(Transform parent);
+        public abstract GameObject OnCreateViewHolder();
         public abstract void OnBindViewHolder(T holder, int i);   
         public abstract int GetItemCount();
 
@@ -107,7 +107,7 @@ namespace UI
             /// Scroll to a certain position from [0, 
             /// </summary>
             /// <param name="pos"></param>
-            public void ScrollTo(Vector2 pos)
+            public void ScrollBy(Vector2 pos)
             {
                 layoutManager.ScrollTo(pos);
             }
@@ -188,7 +188,7 @@ namespace UI
                 }
 
 
-                IViewHolderInfo vh = (ViewHolder)Activator.CreateInstance(typeof(T), new object[] { OnCreateViewHolder(transform) });
+                IViewHolderInfo vh = (ViewHolder)Activator.CreateInstance(typeof(T), new object[] { OnCreateViewHolder() });
                 vh.CurrentIndex = position;
                 vh.LastIndex = position;
                 vh.Status = ViewHolder.Status.SCRAP;
@@ -313,7 +313,7 @@ namespace UI
 
             if (GetItemCount() > 0)
             {
-                IViewHolderInfo vh = (T)Activator.CreateInstance(typeof(T), new object[] { OnCreateViewHolder(transform) });
+                IViewHolderInfo vh = (T)Activator.CreateInstance(typeof(T), new object[] { OnCreateViewHolder() });
                 vh.CurrentIndex = pos;
                 vh.LastIndex = pos;
                 vh.Status = ViewHolder.Status.SCRAP;
@@ -325,13 +325,13 @@ namespace UI
                     
                 layoutManager.OnDataChange(vh.ItemView, pos);
 
-                int ATTACHED_SCRAP_SIZE = layoutManager.GetScreenListSize();
+                int ATTACHED_SCRAP_SIZE = layoutManager.GetScreenListSize() + 1;
 
                 for (int i = pos + 1; i < ATTACHED_SCRAP_SIZE + pos; i++)
                 {
                     if (i < GetItemCount())
                     {
-                        IViewHolderInfo vh2 = (T)Activator.CreateInstance(typeof(T), new object[] { OnCreateViewHolder(transform) });
+                        IViewHolderInfo vh2 = (T)Activator.CreateInstance(typeof(T), new object[] { OnCreateViewHolder() });
                         vh2.CurrentIndex = i;
                         vh2.LastIndex = i;
                         vh2.Status = ViewHolder.Status.SCRAP;
@@ -746,11 +746,6 @@ namespace UI
                     float y = GridRectTransform.offsetMax.y;
                     while (goUp ? GridRectTransform.offsetMax.y > v.y : GridRectTransform.offsetMax.y < v.y)
                     {
-                        if (isClickDown)
-                        {
-                            break;
-                        }
-
                         y += goUp ? -speed : speed;
 
                         if (y > LIMIT_BOTTOM)
@@ -767,6 +762,11 @@ namespace UI
                         OnScroll();
                         yield return new WaitForEndOfFrame();
 
+
+                        if (isClickDown)
+                        {
+                            break;
+                        }
                     }
                 }
                 else
@@ -776,10 +776,7 @@ namespace UI
                     float y = GridRectTransform.offsetMax.x;
                     while (goUp ? GridRectTransform.offsetMax.x > v.x : GridRectTransform.offsetMax.x < v.x)
                     {
-                        if (isClickDown)
-                        {
-                            break;
-                        }
+                       
 
                         y += goUp ? -speed : speed;
 
@@ -796,6 +793,12 @@ namespace UI
                         GridRectTransform.sizeDelta = new Vector2(GridRectTransform.sizeDelta.x, 0);
                         OnScroll();
                         yield return new WaitForEndOfFrame();
+
+                        if (isClickDown)
+                        {
+                            break;
+                        }
+
                     }
                 }
                 ScrollRect.inertia = true;
@@ -858,6 +861,10 @@ namespace UI
 
             private bool IsStateValid()
             {
+                if(recyclerView.GetItemCount() == 0)
+                {
+                    return true;
+                }
                 foreach (IViewHolderInfo vh in recyclerView.AttachedScrap)
                 {
                     if (!vh.IsHidden())
@@ -1093,7 +1100,7 @@ namespace UI
 
         private interface IAdapter
         {
-            GameObject OnCreateViewHolder(Transform parent);
+            GameObject OnCreateViewHolder();
             void OnBindViewHolder(T holder, int i);
             int GetItemCount();
         }
@@ -1209,7 +1216,7 @@ namespace UI
                         "        throw new System.NotImplementedException();\n" +
                         "    }\n" +
                         "\n" +
-                        "    public override GameObject OnCreateViewHolder(Transform parent)\n" +
+                        "    public override GameObject OnCreateViewHolder()\n" +
                         "    {\n" +
                         "        throw new System.NotImplementedException();\n" +
                         "    }\n" +
