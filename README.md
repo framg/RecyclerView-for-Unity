@@ -3,7 +3,9 @@
 This is an untiy adaption for the current recycler view base on Android.
 [Recycler View Official Documentation](https://developer.android.com/reference/android/support/v7/widget/RecyclerView)
 
-[Unity Package](https://github.com/framg/RecyclerView/blob/master/Build/RecyclerView.unitypackage)
+### **Download the UnityPackage:**
+
+[Unity Package](https://github.com/framg/RecyclerView-for-Unity/raw/master/Build/RecyclerView.unitypackage)
 
 ## What is RecyclerView?
 
