@@ -1162,8 +1162,9 @@ namespace UI
             if (canvas == null)
             {
                 GameObject canvasObj = new GameObject();
+                canvasObj.name = typeof(Canvas).ToString();
                 canvasObj.AddComponent<RectTransform>();
-                canvasObj.AddComponent<Canvas>();
+                canvas = canvasObj.AddComponent<Canvas>();
                 canvasObj.AddComponent<CanvasScaler>();
                 canvasObj.AddComponent<GraphicRaycaster>();
             }
